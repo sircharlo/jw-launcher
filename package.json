@@ -1,0 +1,63 @@
+{
+  "name": "jw-launcher",
+  "version": "0.1.0",
+  "description": "JW Launcher",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sircharlo/jw-launcher.git"
+  },
+  "dependencies": {
+    "@electron/remote": "^1.0.4",
+    "@fortawesome/fontawesome-free": "^5.15.3",
+    "axios": "^0.21.1",
+    "bootstrap": "^4.6.0",
+    "bootstrap-dark-4": "^0.0.9",
+    "electron-updater": "^4.3.8",
+    "graceful-fs": "^4.2.6",
+    "is-port-reachable": "^3.0.0",
+    "jquery": "^3.6.0",
+    "os": "^0.1.1",
+    "path": "^0.12.7",
+    "popper.js": "^1.16.1",
+    "power-control": "^1.0.0"
+  },
+  "build": {
+    "appId": "sircharlo.jw-launcher",
+    "productName": "JW Launcher",
+    "win": {
+      "target": "NSIS",
+      "icon": "build/icon.ico",
+      "publish": [
+        "github"
+      ]
+    },
+    "linux": {
+      "category": "Utilities",
+      "target": "AppImage",
+      "icon": "build/icon.png",
+      "publish": [
+        "github"
+      ]
+    },
+    "buildDependenciesFromSource": true
+  },
+  "devDependencies": {
+    "electron": "^12.0.2",
+    "electron-builder": "^22.10.5",
+    "eslint": "^7.23.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "pack-win": "electron-builder --win",
+    "pack-win-test": "electron-builder --dir --win",
+    "pack-linux-test": "electron-builder --dir --linux",
+    "pack-linux": "electron-builder --linux",
+    "publish": "electron-builder --win -p always",
+    "publish-linux": "electron-builder --linux -p always",
+    "postinstall": "electron-builder install-app-deps",
+    "release": "electron-builder"
+  },
+  "author": "",
+  "license": "ISC"
+}

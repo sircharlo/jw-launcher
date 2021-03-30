@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>JW Launcher</title>
+  <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
+  <link rel="stylesheet" href="node_modules/bootstrap-dark-4/dist/bootstrap-dark.min.css">
+  <!-- <link rel="stylesheet" href="node_modules/select2/dist/css/select2.min.css"> -->
+  <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
+  <style>
+    html,
+    body {
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .overlay {
+      background: var(--light);
+      position: fixed;
+      height: 100%;
+      width: 100%;
+      z-index: 5000;
+      top: 0;
+      left: 0;
+      float: left;
+      text-align: center;
+      display: flex;
+    }
+
+    #overlaySettings {
+      z-index: 50;
+    }
+
+    #home {
+      height: 100%;
+    }
+
+    #overlaySettings {
+      font-size: 0.9em
+    }
+
+    #overlaySettings div.btn-group-toggle {
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+
+    .invalid {
+      /* background-color: var(--red) !important; */
+      border-color: var(--danger) !important;
+    }
+
+    #version span.badge {
+      color: var(--dark);
+      font-weight: normal;
+    }
+
+    .actions .btn {
+      font-size: 7vh !important;
+    }
+
+    .advanced-actions .btn {
+      font-size: 3vh !important;
+    }
+  </style>
+  <meta name="color-scheme" content="light dark">
+  <script>
+    window.$ = window.jQuery = require('jquery');
+    window.popperjs = require('popper.js');
+    window.Bootstrap = require('bootstrap');
+    // window.select2 = require('select2')(jQuery);
+  </script>
+</head>
+
+<body>
+  <div id="overlayInternetCheck" class="overlay justify-content-center">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-wifi"></i>
+      </div>
+      <div class="align-self-center text-muted fa-2x" role="status">
+        <i class="fas fa-circle-notch fa-spin"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlayPleaseWait" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-tasks"></i>
+      </div>
+      <div class="align-self-center text-muted fa-2x" role="status">
+        <i class="fas fa-circle-notch fa-spin"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlayInternetFail" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-wifi"></i>
+      </div>
+      <div class="align-self-center text-danger fa-2x" role="status">
+        <i class="fas fa-circle-notch fa-spin"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlayUpdateCheck" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-wifi"></i>
+      </div>
+      <div class="align-self-center text-success fa-2x" role="status">
+        <i class="fas fa-check-circle"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlayUpdateAvailable" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-cloud-download-alt"></i>
+      </div>
+      <div class="align-self-center text-warning fa-2x" role="status">
+        <i class="fas fa-circle-notch fa-spin"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlayUpdateDownloaded" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center text-dark fa-5x" role="status">
+        <i class="fas fa-fw fa-cloud-download-alt"></i>
+      </div>
+      <div class="align-self-center text-success fa-2x" role="status">
+        <i class="fas fa-check-circle"></i>
+      </div>
+    </div>
+  </div>
+  <div id="overlaySettings" class="flex-column p-4 overlay" style="display: none;">
+    <div class="align-items-center d-flex justify-content-center pb-4">
+      <i id="settingsIcon" class="fas fa-fw fa-user-cog fa-3x text-muted"></i>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="updateUrl" class="col-sm-4 m-0 text-right">Settings URL</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="updateUrl" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom1Desc" class="col-sm-4 m-0 text-right">Meeting 1</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom1Desc" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom1Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom1Url" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom2Desc" class="col-sm-4 m-0 text-right">Meeting 2</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom2Desc" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom2Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom2Url" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom3Desc" class="col-sm-4 m-0 text-right">Meeting 3</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom3Desc" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="zoom3Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="zoom3Url" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="labelShutdown" class="col-sm-4 m-0 text-right">Shutdown label</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="labelShutdown" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="labelRemoteAssistance" class="col-sm-4 m-0 text-right">Remote assistance label</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="labelRemoteAssistance" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <label for="labelSettings" class="col-sm-4 m-0 text-right">Settings label</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="labelSettings" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <div class="custom-control custom-switch col notLinux">
+        <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
+        <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>
+      </div>
+      <div class="custom-control custom-switch col">
+        <input type="checkbox" class="custom-control-input" id="hideRemoteAssistance" />
+        <label class="custom-control-label" for="hideRemoteAssistance">Hide remote assistance</label>
+      </div>
+      <div class="custom-control custom-switch col">
+        <input type="checkbox" class="custom-control-input" id="hideShutdown" />
+        <label class="custom-control-label" for="hideShutdown">Hide shutdown</label>
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center">
+      <div class="flex-fill">
+        <button type="button" class="btn btn-dark btnSettings">
+          <i class="fas fa-fw fa-home"></i>
+        </button>
+      </div>
+    </div>
+    <div id="version" class="align-items-center d-flex justify-content-center pt-3">
+      <span class="badge"></span>
+    </div>
+  </div>
+  <div id="home" class="d-flex flex-column">
+    <div class="align-items-center d-flex h-75 justify-content-center actions my-2">
+      <button id="zoom1Button" type="button" class="btn btn-primary btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      </button>
+      <button id="zoom2Button" type="button" class="btn btn-success btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      </button>
+      <button id="zoom3Button" type="button" class="btn btn-warning btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      </button>
+    </div>
+    <div class="align-items-center d-flex h-25 text-center justify-content-center my-2 advanced-actions">
+      <button class="btn btn-danger mx-2 col h-100" id="btnShutdown">
+        <i class="fas fa-fw fa-power-off"></i> <span id="lblShutdown"></span>
+      </button>
+      <button class="btn btn-info mx-2 col h-100" id="btnRemoteAssistance">
+        <i class="fas fa-fw fa-hands-helping"></i> <span id="lblRemoteAssistance"></span>
+      </button>
+      <button class="btn btn-danger mx-2 col h-100" id="btn-mac-update" style="display: none;">
+        <i class="fas fa-fw fa-exclamation-triangle"></i> Update available!
+      </button>
+      <button class="btn btn-secondary mx-2 col h-100" id="btnSettings">
+        <i class="fas fa-fw fa-user-cog"></i> <span id="lblSettings"></span>
+      </button>
+    </div>
+  </div>
+  <script src="./launcher.js"></script>
+</body>
+
+</html>

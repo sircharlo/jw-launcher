@@ -1,5 +1,6 @@
 const isPortReachable = require("is-port-reachable"),
   remoteApp = require("@electron/remote").app,
+  remoteDialog = require("@electron/remote").dialog,
   {shell} = require("electron"),
   $ = require("jquery");
 async function checkInternet() {
@@ -66,19 +67,20 @@ function goAhead() {
     }
     prefsInitialize();
   }
+  configIsValid();
   if (prefs.updateUrl) {
+    $(".localSettings input").prop("disabled", true);
     syncPrefs();
   }
-  configIsValid();
   $("#version span.badge").html("v" + remoteApp.getVersion());
   $("#overlayPleaseWait").fadeOut();
   if (os.platform() == "linux") {
-    $(".notLinux").removeClass("d-flex").hide();
+    $(".notLinux").removeClass("d-flex").fadeOut();
   }
   $(".btnSettings, #btnSettings").on("click", function() {
     toggleScreen("overlaySettings");
   });
-  $("#overlaySettings input, #overlaySettings select").on("change", function() {
+  $(".localSettings input, .localSettings select").on("change", function() {
     if ($(this).prop("tagName") == "INPUT") {
       if ($(this).prop("type") == "checkbox") {
         prefs[$(this).prop("id")] = $(this).prop("checked");
@@ -99,10 +101,39 @@ function goAhead() {
     });
   });
   $("#updateUrl").on("change", function() {
-    syncPrefs();
+    if ($(this).val().length > 0) {
+      $(".localSettings input").prop("disabled", true);
+      syncPrefs();
+    } else {
+      prefs.updateUrl = $(this).val();
+      fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
+      $(".localSettings input").prop("disabled", false);
+    }
   });
   $("#btnShutdown").on("click", function() {
     powerControl.powerOff();
+  });
+  $("#btnExport").on("click", function() {
+    var path = remoteDialog.showSaveDialogSync({
+      defaultPath : "prefs.json"
+    });
+    console.log(path);
+    fs.writeFileSync(path, JSON.stringify(prefs, null, 2));
+
+  });
+  $("#zoom1Button, #zoom2Button, #zoom3Button").on("click", function () {
+    var zoomButton = $(this).prop("id").replace(/\D/g, "");
+    try {
+      var zoomUrl = $("#zoom" + zoomButton + "Url").val();
+      var zoomArr = zoomUrl.split("/").pop().split("?");
+      var zoomId = zoomArr[0];
+      var zoomEncodedPwd = zoomArr[1].split("=").pop();
+      shell.openExternal("zoommtg://zoom.us/join?confno=" + zoomId + "&pwd=" + zoomEncodedPwd + "&uname=User");
+    } catch(err) {
+      toggleScreen("overlaySettings", true);
+      $("#zoom" + zoomButton + "Url").val("").addClass("invalid").change();
+      console.error(err);
+    }
   });
   $("#btnRemoteAssistance").on("click", async function() {
     var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
@@ -120,66 +151,53 @@ function goAhead() {
     $(this).html(initialTriggerText).prop("disabled", false);
 
   });
-  function configIsValid(automated) {
-    $("#overlaySettings label.text-danger").removeClass("text-danger");
-    $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
+  function configIsValid() {
     var configIsValid = true;
     for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
       $("#lbl" + label).html(prefs["label" + label]);
     }
     for (var hideMe of ["Shutdown", "RemoteAssistance"]) {
       if (prefs["hide" + hideMe]) {
-        $("#btn" + hideMe).hide();
+        $("#btn" + hideMe).fadeOut();
       } else {
-        $("#btn" + hideMe).show();
+        $("#btn" + hideMe).fadeIn();
       }
     }
+    $("#overlaySettings label.text-danger").removeClass("text-danger");
+    $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
     for (var elem of ["1", "2", "3"]) {
       if ($("#zoom" + elem + "Desc").val() == "false" || $("#zoom" + elem + "Desc").val() == "null") {
         $("#zoom" + elem + "Desc").val("");
       }
       if (!$("#zoom" + elem + "Desc").val()) {
         $("#zoom" + elem + "Url").prop("disabled", true).val("");
-        $("#zoom" + elem + "Button").hide();
+        $("#zoom" + elem + "Button").fadeOut();
       } else {
         $("#zoom" + elem + "Button").html($("#zoom" + elem + "Desc").val());
         if (!$("#zoom" + elem + "Url").val()) {
           $("#zoom" + elem + "Url").addClass("invalid").prop("disabled", false);
           configIsValid = false;
         } else {
-          try {
-            var zoomUrl = $("#zoom" + elem + "Url").val();
-            var zoomArr = zoomUrl.split("/").pop().split("?");
-            var zoomId = zoomArr[0];
-            var zoomEncodedPwd = zoomArr[1].split("=").pop();
-            $("#zoom" + elem + "Button").show().on("click", function () {
-              shell.openExternal("zoommtg://zoom.us/join?confno=" + zoomId + "&pwd=" + zoomEncodedPwd + "&uname=Betty");
-            });
-          } catch(err) {
-            configIsValid = false;
-            $("#zoom" + elem + "Url").val("").addClass("invalid");
-            console.error(err);
-          }
+          $("#zoom" + elem + "Button").fadeIn();
         }
       }
+      //  }
+      if (!$("#zoom1Desc").val() && !$("#zoom2Desc").val() && !$("#zoom3Desc").val()) {
+        $("#zoom1Desc").addClass("invalid");
+        configIsValid = false;
+      }
+      $("#overlaySettings .invalid").each(function() {
+        $(this).closest("div.flex-row").find("label").addClass("text-danger");
+      });
     }
-    if (!$("#zoom1Desc").val() && !$("#zoom2Desc").val() && !$("#zoom3Desc").val()) {
-      $("#zoom1Desc").addClass("invalid");
-      configIsValid = false;
-    }
-    $("#overlaySettings .invalid").each(function() {
-      $(this).closest("div.flex-row").find("label").addClass("text-danger");
-    });
     if (configIsValid) {
       $(".btnSettings").prop("disabled", false).addClass("btn-primary").removeClass("btn-danger");
       $("#settingsIcon").addClass("text-muted").removeClass("text-danger");
-      if (automated) {
-        toggleScreen("overlaySettings", null, true);
-      }
       return true;
     } else {
       $(".btnSettings").prop("disabled", true).addClass("btn-danger").removeClass("btn-primary");
       $("#settingsIcon").addClass("text-danger").removeClass("text-muted");
+      console.log(prefs);
       toggleScreen("overlaySettings", true);
       return false;
     }
@@ -212,17 +230,18 @@ function goAhead() {
     }
   }
   function syncPrefs() {
-    axios.get(prefs.updateUrl).then((res) => {
+    axios.get($("#updateUrl").val()).then((res) => {
       prefs = res.data;
-      console.log(prefs);
       fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
       prefsInitialize();
-      configIsValid(true);
+      configIsValid();
+    }).catch((error) => {
+      console.error(error);
+      $("#updateUrl").addClass("invalid");
     });
   }
   function toggleScreen(screen, forceShow, forceHide) {
     var visible = $("#" + screen).is(":visible");
-    console.log(visible, forceShow, forceHide);
     if (forceShow) {
       $("#" + screen).slideDown("fast");
     } else if (forceHide) {

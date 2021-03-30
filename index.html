@@ -5,7 +5,6 @@
   <title>JW Launcher</title>
   <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
   <link rel="stylesheet" href="node_modules/bootstrap-dark-4/dist/bootstrap-dark.min.css">
-  <!-- <link rel="stylesheet" href="node_modules/select2/dist/css/select2.min.css"> -->
   <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
     html,
@@ -45,7 +44,6 @@
     }
 
     .invalid {
-      /* background-color: var(--red) !important; */
       border-color: var(--danger) !important;
     }
 
@@ -67,7 +65,6 @@
     window.$ = window.jQuery = require('jquery');
     window.popperjs = require('popper.js');
     window.Bootstrap = require('bootstrap');
-    // window.select2 = require('select2')(jQuery);
   </script>
 </head>
 
@@ -144,64 +141,71 @@
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center localSettings">
+      <label for="username" class="col-sm-4 m-0 text-right">Name of user</label>
+      <div class="flex-fill">
+        <input type="text" class="form-control form-control-sm" id="username" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom1Desc" class="col-sm-4 m-0 text-right">Meeting 1</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom1Desc" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom1Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom1Url" required />
       </div>
     </div>
     <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom2Desc" class="col-sm-4 m-0 text-right">Meeting 2</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom2Desc" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom2Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom2Url" required />
       </div>
     </div>
     <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom3Desc" class="col-sm-4 m-0 text-right">Meeting 3</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom3Desc" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="zoom3Url" class="col-sm-4 m-0 text-right">Meeting URL</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="zoom3Url" required />
       </div>
     </div>
     <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="labelShutdown" class="col-sm-4 m-0 text-right">Shutdown label</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="labelShutdown" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="labelRemoteAssistance" class="col-sm-4 m-0 text-right">Remote assistance label</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="labelRemoteAssistance" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <label for="labelSettings" class="col-sm-4 m-0 text-right">Settings label</label>
       <div class="flex-fill">
         <input type="text" class="form-control form-control-sm" id="labelSettings" required />
       </div>
     </div>
     <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center localSettings">
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
       <div class="custom-control custom-switch col notLinux">
         <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
         <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>

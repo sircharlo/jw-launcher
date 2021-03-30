@@ -55,9 +55,12 @@ function goAhead() {
     path = require("path"),
     powerControl = require("power-control"),
     appPath = remoteApp.getPath("userData"),
+    localPrefsFile = path.join(appPath, "local-prefs.json"),
     prefsFile = path.join(appPath, "prefs.json");
 
-  var prefs = {};
+  var localPrefs = {},
+    prefs = {},
+    username = "User";
 
   if (fs.existsSync(prefsFile)) {
     try {
@@ -67,9 +70,18 @@ function goAhead() {
     }
     prefsInitialize();
   }
+  if (fs.existsSync(localPrefsFile)) {
+    try {
+      localPrefs = JSON.parse(fs.readFileSync(localPrefsFile));
+      console.log(localPrefsFile);
+    } catch (err) {
+      console.error(err);
+    }
+    localPrefsInitialize();
+  }
   processSettings();
   if (prefs.updateUrl) {
-    $(".localSettings input").prop("disabled", true);
+    $(".syncedSettings input").prop("disabled", true);
     syncPrefs();
   }
   $("#version span.badge").html("v" + remoteApp.getVersion());
@@ -80,7 +92,7 @@ function goAhead() {
   $(".btnSettings, #btnSettings").on("click", function() {
     toggleScreen("overlaySettings");
   });
-  $(".localSettings input, .localSettings select").on("change", function() {
+  $(".syncedSettings input, .syncedSettings select").on("change", function() {
     if ($(this).prop("tagName") == "INPUT") {
       if ($(this).prop("type") == "checkbox") {
         prefs[$(this).prop("id")] = $(this).prop("checked");
@@ -95,6 +107,21 @@ function goAhead() {
     fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
     processSettings();
   });
+  $(".localSettings input, .localSettings select").on("change", function() {
+    if ($(this).prop("tagName") == "INPUT") {
+      if ($(this).prop("type") == "checkbox") {
+        localPrefs[$(this).prop("id")] = $(this).prop("checked");
+      } else if ($(this).prop("type") == "radio") {
+        localPrefs[$(this).closest("div").prop("id")] = $(this).closest("div").find("input:checked").val();
+      } else if ($(this).prop("type") == "text" || $(this).prop("type") == "password") {
+        localPrefs[$(this).prop("id")] = $(this).val();
+      }
+    } else if ($(this).prop("tagName") == "SELECT") {
+      localPrefs[$(this).prop("id")] = $(this).find("option:selected").val();
+    }
+    fs.writeFileSync(localPrefsFile, JSON.stringify(localPrefs, null, 2));
+    processSettings();
+  });
   $("#autoRunAtBoot").on("change", function() {
     remoteApp.setLoginItemSettings({
       openAtLogin: prefs.autoRunAtBoot
@@ -102,12 +129,12 @@ function goAhead() {
   });
   $("#updateUrl").on("change", function() {
     if ($(this).val().length > 0) {
-      $(".localSettings input").prop("disabled", true);
+      $(".syncedSettings input").prop("disabled", true);
       syncPrefs();
     } else {
       prefs.updateUrl = $(this).val();
       fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
-      $(".localSettings input").prop("disabled", false);
+      $(".syncedSettings input").prop("disabled", false);
     }
   });
   $("#btnShutdown").on("click", function() {
@@ -128,7 +155,7 @@ function goAhead() {
       var zoomArr = zoomUrl.split("/").pop().split("?");
       var zoomId = zoomArr[0];
       var zoomEncodedPwd = zoomArr[1].split("=").pop();
-      shell.openExternal("zoommtg://zoom.us/join?confno=" + zoomId + "&pwd=" + zoomEncodedPwd + "&uname=User");
+      shell.openExternal("zoommtg://zoom.us/join?confno=" + zoomId + "&pwd=" + zoomEncodedPwd + "&uname=" + username);
     } catch(err) {
       toggleScreen("overlaySettings", true);
       $("#zoom" + zoomButton + "Url").val("").addClass("invalid").change();
@@ -153,8 +180,10 @@ function goAhead() {
   });
   function processSettings() {
     var configIsValid = true;
+    console.log(prefs, localPrefs);
     for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
       $("#lbl" + label).html(prefs["label" + label]);
+      console.log("#lbl" + label, prefs["label" + label]);
     }
     for (var hideMe of ["Shutdown", "RemoteAssistance"]) {
       if (prefs["hide" + hideMe]) {
@@ -166,6 +195,9 @@ function goAhead() {
     remoteApp.setLoginItemSettings({
       openAtLogin: prefs.autoRunAtBoot
     });
+    if (localPrefs.username) {
+      username = localPrefs.username;
+    }
     $("#overlaySettings label.text-danger").removeClass("text-danger");
     $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
     for (var elem of ["1", "2", "3"]) {
@@ -218,6 +250,18 @@ function goAhead() {
     } catch (err) {
       console.error(err);
       return err;
+    }
+  }
+  function localPrefsInitialize() {
+    for (var localPref of ["username"]) {
+      if (!(Object.keys(localPrefs).includes(localPref)) || !localPrefs[localPref]) {
+        localPrefs[localPref] = null;
+      }
+      if ($("#" + localPref)[0].type == "text") {
+        $("#" + localPref).val(localPrefs[localPref]);
+      } else if ($("#" + localPref)[0].type == "checkbox") {
+        $("#" + localPref).prop("checked", localPref[localPref]);
+      }
     }
   }
   function prefsInitialize() {

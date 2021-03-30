@@ -67,7 +67,7 @@ function goAhead() {
     }
     prefsInitialize();
   }
-  configIsValid();
+  processSettings();
   if (prefs.updateUrl) {
     $(".localSettings input").prop("disabled", true);
     syncPrefs();
@@ -93,7 +93,7 @@ function goAhead() {
       prefs[$(this).prop("id")] = $(this).find("option:selected").val();
     }
     fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
-    configIsValid();
+    processSettings();
   });
   $("#autoRunAtBoot").on("change", function() {
     remoteApp.setLoginItemSettings({
@@ -151,7 +151,7 @@ function goAhead() {
     $(this).html(initialTriggerText).prop("disabled", false);
 
   });
-  function configIsValid() {
+  function processSettings() {
     var configIsValid = true;
     for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
       $("#lbl" + label).html(prefs["label" + label]);
@@ -163,6 +163,9 @@ function goAhead() {
         $("#btn" + hideMe).fadeIn();
       }
     }
+    remoteApp.setLoginItemSettings({
+      openAtLogin: prefs.autoRunAtBoot
+    });
     $("#overlaySettings label.text-danger").removeClass("text-danger");
     $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
     for (var elem of ["1", "2", "3"]) {
@@ -234,7 +237,7 @@ function goAhead() {
       prefs = res.data;
       fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
       prefsInitialize();
-      configIsValid();
+      processSettings();
     }).catch((error) => {
       console.error(error);
       $("#updateUrl").addClass("invalid");

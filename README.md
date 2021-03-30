@@ -2,7 +2,7 @@
 
 Here is a simple app that facilitates opening certain Zoom meetings for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session, if remote help is needed, and a button to shut down the computer.
 
-![Main screen of app](https://github.com/sircharlo/jw-launcher/blob/master/screenshots/01-main.png?raw=true)
+![Main screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/01-main.png?raw=true)
 
 ## Installation
 
@@ -11,7 +11,7 @@ setup is complete, a shortcut to the app will be placed on your desktop. Open th
 
 ## Usage
 
-![Settings screen of app](https://github.com/sircharlo/jw-launcher/blob/master/screenshots/02-settings.png?raw=true)
+![Settings screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/02-settings.png?raw=true)
 
 The settings section is mostly self-explanatory. Note that the Zoom URL fields expect a Zoom URL in the following format: https://some.zoom.site/j/MEETING_ID_HERE?pwd=ENCODED_PASSWORD_HERE
 

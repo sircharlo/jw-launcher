@@ -1,6 +1,6 @@
 # Welcome!
 
-Here is a simple app that facilitates opening certain Zoom meetings for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session, if remote help is needed, and a button to shut down the computer.
+Here is a simple app that facilitates opening certain Zoom meetings for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session, if remote help is needed, and a button to shut down the computer. The app can be set to run automatically when Windows boots, which could be especially useful for an older person if combined with a password-less Windows login.
 
 ![Main screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/01-main.png?raw=true)
 

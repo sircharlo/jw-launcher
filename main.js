@@ -18,10 +18,13 @@ function createUpdateWindow() {
     },
     width: 600,
     height: 600,
-    //    fullscreen: true,
-    //alwaysOnTop: true,
+    //  fullscreen: true,
+    //  alwaysOnTop: true,
     title: "JW Launcher"
   });
+  const ses = win.webContents.session;
+  ses.clearCache();
+  ses.clearStorageData();
   win.setMenuBarVisibility(false);
   win.loadFile("index.html");
   win.maximize();

@@ -151,14 +151,10 @@ function goAhead() {
   $("#zoom1Button, #zoom2Button, #zoom3Button").on("click", function () {
     var zoomButton = $(this).prop("id").replace(/\D/g, "");
     try {
-      var zoomUrl = $("#zoom" + zoomButton + "Url").val();
-      var zoomArr = zoomUrl.split("/").pop().split("?");
-      var zoomId = zoomArr[0];
-      var zoomEncodedPwd = zoomArr[1].split("=").pop();
-      shell.openExternal("zoommtg://zoom.us/join?confno=" + zoomId + "&pwd=" + zoomEncodedPwd + "&uname=" + username);
+      shell.openExternal("zoommtg://zoom.us/join?confno=" + $("#zoom" + zoomButton + "Id").val() + "&pwd=" + $("#zoom" + zoomButton + "Password").val() + "&uname=" + username);
     } catch(err) {
       toggleScreen("overlaySettings", true);
-      $("#zoom" + zoomButton + "Url").val("").addClass("invalid").change();
+      $("#zoom" + zoomButton + "Id, #zoom" + zoomButton + "Password").val("").addClass("invalid").change();
       console.error(err);
     }
   });
@@ -176,7 +172,13 @@ function goAhead() {
     fs.writeFileSync(path.join(appPath, qsFilename), new Buffer(qs));
     shell.openExternal(path.join(appPath, qsFilename));
     $(this).html(initialTriggerText).prop("disabled", false);
-
+  });
+  $("#zoom1Id, #zoom2Id, #zoom3Id").keyup(function (event) {
+    if (event.which != 8 && event.which != 0 && event.which < 48 || event.which > 57) {
+      $(this).val(function (index, value) {
+        return value.replace(/\D/g, "");
+      });
+    }
   });
   function processSettings() {
     var configIsValid = true;
@@ -205,12 +207,12 @@ function goAhead() {
         $("#zoom" + elem + "Desc").val("");
       }
       if (!$("#zoom" + elem + "Desc").val()) {
-        $("#zoom" + elem + "Url").prop("disabled", true).val("");
+        $("#zoom" + elem + "Id, #zoom" + elem + "Password").prop("disabled", true).val("");
         $("#zoom" + elem + "Button").fadeOut();
       } else {
         $("#zoom" + elem + "Button").html($("#zoom" + elem + "Desc").val());
-        if (!$("#zoom" + elem + "Url").val()) {
-          $("#zoom" + elem + "Url").addClass("invalid").prop("disabled", false);
+        if (!$("#zoom" + elem + "Id").val() || !$("#zoom" + elem + "Password").val()) {
+          $("#zoom" + elem + "Id, #zoom" + elem + "Password").addClass("invalid").prop("disabled", false);
           configIsValid = false;
         } else {
           $("#zoom" + elem + "Button").fadeIn();
@@ -265,7 +267,7 @@ function goAhead() {
     }
   }
   function prefsInitialize() {
-    for (var pref of ["updateUrl", "zoom1Desc", "zoom1Url", "zoom2Desc", "zoom2Url", "zoom3Desc", "zoom3Url", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance"]) {
+    for (var pref of ["updateUrl", "zoom1Desc", "zoom1Id", "zoom1Password", "zoom2Desc", "zoom2Id", "zoom2Password", "zoom3Desc", "zoom3Id", "zoom3Password", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance"]) {
       if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
         prefs[pref] = null;
       }

@@ -1,6 +1,6 @@
 # Welcome!
 
-Here is a simple app that facilitates opening certain Zoom meetings for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session, if remote help is needed, and a button to shut down the computer. The app can be set to run automatically when Windows boots, which could be especially useful for an older person if combined with a password-less Windows login.
+Here is a simple app that facilitates launching Zoom meetings and play videos from JW Broadcasting, for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session, if remote help is needed, and a button to shut down the computer. The app can be set to run automatically when Windows boots, which could be especially useful for an older person if combined with a password-less Windows login.
 
 ![Main screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/01-main.png?raw=true)
 
@@ -13,13 +13,13 @@ setup is complete, a shortcut to the app will be placed on your desktop. Open th
 
 ![Settings screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/02-settings.png?raw=true)
 
-The settings section is mostly self-explanatory. Note that the Zoom URL fields expect a Zoom URL in the following format: https://some.zoom.site/j/MEETING_ID_HERE?pwd=ENCODED_PASSWORD_HERE
+The settings section is mostly self-explanatory.
 
-Also, note that you can configure a URL to a settings file. If used, this URL should point to a publicly accessible file. The app will attempt to load this file when opening up, and will then overwrite its settings with the ones retrieved in that file.
+Note that you can input an URL to a settings file. If used, this URL should point to a publicly accessible file. The app will attempt to download this file when opening up, and will then overwrite its settings with the ones retrieved from that file.
 
 This is especially useful when setting up a Zoom meeting for special events; the local app "administrator" can update the shared settings file with the temporary Zoom codes, so that all those who are synced to that particular settings file have the possibility of connecting to the meeting when needed.
 
-This can also be useful to set up different labels and meetings based on different users or groups, for example with older elders who need access to an special meeting ID and code, or for ones who speak a different language and would be disoriented if the button labels weren't in their language.
+This can also be useful to set up different labels and meetings based on different users or groups, for example with older elders who need access to a special meeting ID and password, or for ones who speak a different language and would be disoriented if the button labels weren't in their language.
 
 ## App usage notes
 

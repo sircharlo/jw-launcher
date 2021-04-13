@@ -53,11 +53,32 @@
     }
 
     .actions .btn {
-      font-size: 7vh !important;
+      font-size: 6vh !important;
     }
 
     .advanced-actions .btn {
       font-size: 3vh !important;
+    }
+
+    #videos h5,
+    #videos h6 {
+      font-size: 2vh;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #videos h6 {
+      font-size: 1.5vh;
+    }
+
+    #closeButton {
+      position: fixed;
+      height: 10vh;
+      width: 10vh;
+      border-bottom-right-radius: 2.5vw;
+      font-size: 3vw;
+      z-index: 1000;
     }
   </style>
   <meta name="color-scheme" content="light dark">
@@ -65,7 +86,9 @@
     window.$ = window.jQuery = require('jquery');
     window.popperjs = require('popper.js');
     window.Bootstrap = require('bootstrap');
+    window.select2 = require('select2')(jQuery);
   </script>
+  <link rel="stylesheet" href="node_modules/select2/dist/css/select2.min.css">
 </head>
 
 <body>
@@ -218,17 +241,21 @@
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <div class="custom-control custom-switch col notLinux">
+      <div class="custom-control custom-switch col-2 notLinux">
         <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
         <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>
       </div>
-      <div class="custom-control custom-switch col">
+      <div class="custom-control custom-switch col-2">
         <input type="checkbox" class="custom-control-input" id="hideRemoteAssistance" />
         <label class="custom-control-label" for="hideRemoteAssistance">Hide remote assistance</label>
       </div>
-      <div class="custom-control custom-switch col">
+      <div class="custom-control custom-switch col-2">
         <input type="checkbox" class="custom-control-input" id="hideShutdown" />
         <label class="custom-control-label" for="hideShutdown">Hide shutdown</label>
+      </div>
+      <div class="col d-flex align-items-center syncedSettings">
+        <label for="broadcastLang" class="mr-3 mb-0">Language for broadcast</label>
+        <select style="width: 20vw" id="broadcastLang"></select>
       </div>
     </div>
     <div class="d-flex flex-row flex-fill align-items-center">
@@ -246,12 +273,16 @@
     </div>
   </div>
   <div id="home" class="d-flex flex-column">
-    <div class="align-items-center d-flex h-75 justify-content-center actions my-2">
+    <div class="align-items-center d-flex h-50 flex-fill justify-content-center actions my-2">
       <button id="zoom1Button" type="button" class="btn btn-primary btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
       <button id="zoom2Button" type="button" class="btn btn-success btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
       <button id="zoom3Button" type="button" class="btn btn-warning btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      </button>
+    </div>
+    <div class="align-items-center h-25 justify-content-center actions my-2" style="display: none;">
+      <button id="broadcast1button" type="button" class="btn btn-light btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
     </div>
     <div class="align-items-center d-flex h-25 text-center justify-content-center my-2 advanced-actions">
@@ -267,6 +298,27 @@
       <button class="btn btn-secondary mx-2 col h-100" id="btnSettings">
         <i class="fas fa-fw fa-user-cog"></i> <span id="lblSettings"></span>
       </button>
+    </div>
+  </div>
+  <div id="videos" class="overlay flex-column bg-dark" style="display: none;">
+    <div id="videoPlayer" class="overlay flex-column bg-dark" style="display: none;">
+      <div id="closeButton" class="bg-danger text-light">
+        <i class="fas fa-fw fa-times"></i>
+      </div>
+    </div>
+    <div class="align-items-center h-25 justify-content-center my-2">
+      <div class="featuredVideos justify-content-center d-flex h-100">
+        <div class="col-3 d-flex flex-column bg-warning mx-3 rounded" id="btnGoHome">
+          <div class="flex-grow-1 pt-2 d-flex align-items-center justify-content-center lblGoHome">
+            <h1>
+              <i class="fas fa-fw fa-chevron-circle-left"></i> <span id="lblGoHome"></span>
+            </h1>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="align-items-center h-75 justify-content-center my-2 d-flex">
+      <div class="latestVideos justify-content-center"></div>
     </div>
   </div>
   <script src="./launcher.js"></script>

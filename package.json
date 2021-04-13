@@ -20,7 +20,8 @@
     "os": "^0.1.1",
     "path": "^0.12.7",
     "popper.js": "^1.16.1",
-    "power-control": "^1.0.0"
+    "power-control": "^1.0.0",
+    "select2": "^4.1.0-rc.0"
   },
   "build": {
     "appId": "sircharlo.jw-launcher",

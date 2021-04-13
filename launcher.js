@@ -58,7 +58,8 @@ function goAhead() {
     localPrefsFile = path.join(appPath, "local-prefs.json"),
     prefsFile = path.join(appPath, "prefs.json");
 
-  var localPrefs = {},
+  var broadcastStrings = {},
+    localPrefs = {},
     prefs = {},
     username = "User";
 
@@ -73,7 +74,6 @@ function goAhead() {
   if (fs.existsSync(localPrefsFile)) {
     try {
       localPrefs = JSON.parse(fs.readFileSync(localPrefsFile));
-      console.log(localPrefsFile);
     } catch (err) {
       console.error(err);
     }
@@ -84,6 +84,17 @@ function goAhead() {
     $(".syncedSettings input").prop("disabled", true);
     syncPrefs();
   }
+  (async () => {
+    var req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www");
+    for (var lang of req.languages) {
+      $("#broadcastLang").append($("<option>", {
+        value: lang.code,
+        text: lang.vernacular + " (" + lang.name + ")"
+      }));
+    }
+    $("#broadcastLang").val(prefs.broadcastLang);
+    $("#broadcastLang").select2();
+  })();
   $("#version span.badge").html("v" + remoteApp.getVersion());
   $("#overlayPleaseWait").fadeOut();
   if (os.platform() == "linux") {
@@ -127,6 +138,9 @@ function goAhead() {
       openAtLogin: prefs.autoRunAtBoot
     });
   });
+  $("#broadcastLang").on("change", function() {
+    $(".featuredVideos div:not(#btnGoHome):not(.lblGoHome), .latestVideos div").remove();
+  });
   $("#updateUrl").on("change", function() {
     if ($(this).val().length > 0) {
       $(".syncedSettings input").prop("disabled", true);
@@ -144,9 +158,14 @@ function goAhead() {
     var path = remoteDialog.showSaveDialogSync({
       defaultPath : "prefs.json"
     });
-    console.log(path);
     fs.writeFileSync(path, JSON.stringify(prefs, null, 2));
-
+  });
+  $("#closeButton").on("click", function() {
+    $("#videoPlayer").fadeOut();
+    $("#videoPlayer video").remove();
+  });
+  $("#broadcast1button, #btnGoHome").on("click", function() {
+    toggleScreen("videos");
   });
   $("#zoom1Button, #zoom2Button, #zoom3Button").on("click", function () {
     var zoomButton = $(this).prop("id").replace(/\D/g, "");
@@ -182,10 +201,8 @@ function goAhead() {
   });
   function processSettings() {
     var configIsValid = true;
-    console.log(prefs, localPrefs);
     for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
       $("#lbl" + label).html(prefs["label" + label]);
-      console.log("#lbl" + label, prefs["label" + label]);
     }
     for (var hideMe of ["Shutdown", "RemoteAssistance"]) {
       if (prefs["hide" + hideMe]) {
@@ -199,6 +216,60 @@ function goAhead() {
     });
     if (localPrefs.username) {
       username = localPrefs.username;
+    }
+    if (prefs.broadcastLang) {
+      (async () => {
+        let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
+        broadcastStrings = req.translations[prefs.broadcastLang];
+        $("#broadcast1button").html(broadcastStrings.ttlHome);
+        $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
+        var videos = 0;
+        try {
+          var studioFeatured = await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www");
+          for (var featuredVideo of studioFeatured.category.media.slice(0, 3)) {
+            videos++;
+            var featuredVideoElement = $("<div class='col-3 d-flex flex-column bg-light mx-3 rounded' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "'>" +
+            "<div class='row'>" +
+                "<img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/>" +
+            "</div>" +
+            "<div class='flex-grow-1 pt-2 d-flex align-items-center'>" +
+              "<h5>" + featuredVideo.title + "</h5>" +
+            "</div>" +
+          "</div>").click(function() {
+              $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
+              $("#videoPlayer video").append("<source src='" + $(this).data("url") + "' / >");
+            });
+            $(".featuredVideos").append(featuredVideoElement);
+          }
+        } catch(err) {
+          console.error(err);
+        }
+        try {
+          var latestVideos = await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www");
+          for (var latestVideo of latestVideos.category.media.slice(0, 12)) {
+            videos++;
+            var latestVideoElement = $("<div class='col-3 d-inline-flex flex-column py-3' data-url='" + latestVideo.files.slice(-1)[0].progressiveDownloadURL + "'>" +
+            "<div class='rounded-top'>" +
+                "<img style='width: 100%' src='" + latestVideo.images.pnr.lg + "'/>" +
+            "</div>" +
+            "<div class='flex-grow-1 pt-2 d-flex align-items-center bg-light text-dark px-3 rounded-bottom'>" +
+              "<h6>" + latestVideo.title + "</h6>" +
+            "</div>" +
+          "</div>").click(function() {
+              $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
+              $("#videoPlayer video").append("<source src='" + $(this).data("url") + "' / >");
+            });
+            $(".latestVideos").append(latestVideoElement);
+          }
+        } catch(err) {
+          console.error(err);
+        }
+        if (videos > 0) {
+          $("#broadcast1button").parent().fadeIn();
+        } else {
+          $("#broadcast1button").parent().fadeOut();
+        }
+      })();
     }
     $("#overlaySettings label.text-danger").removeClass("text-danger");
     $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
@@ -218,7 +289,6 @@ function goAhead() {
           $("#zoom" + elem + "Button").fadeIn();
         }
       }
-      //  }
       if (!$("#zoom1Desc").val() && !$("#zoom2Desc").val() && !$("#zoom3Desc").val()) {
         $("#zoom1Desc").addClass("invalid");
         configIsValid = false;
@@ -234,7 +304,6 @@ function goAhead() {
     } else {
       $(".btnSettings").prop("disabled", true).addClass("btn-danger").removeClass("btn-primary");
       $("#settingsIcon").addClass("text-danger").removeClass("text-muted");
-      console.log(prefs);
       toggleScreen("overlaySettings", true);
       return false;
     }
@@ -253,6 +322,17 @@ function goAhead() {
       console.error(err);
       return err;
     }
+  }
+  async function getJson(url) {
+    let response = null,
+      payload = null;
+    try {
+      payload = await axios.get(url);
+      response = payload.data;
+    } catch (err) {
+      console.error(err, payload);
+    }
+    return response;
   }
   function localPrefsInitialize() {
     for (var localPref of ["username"]) {

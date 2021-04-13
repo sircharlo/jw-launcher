@@ -16,8 +16,8 @@ function createUpdateWindow() {
       enableRemoteModule: true,
       contextIsolation: false
     },
-    width: 600,
-    height: 600,
+    minWidth: 1024,
+    minHeight: 768,
     //  fullscreen: true,
     //  alwaysOnTop: true,
     title: "JW Launcher"

@@ -17,7 +17,7 @@ The settings section is mostly self-explanatory.
 
 Note that you can input an URL to a settings file. If used, this URL should point to a publicly accessible file. The app will attempt to download this file when opening up, and will then overwrite its settings with the ones retrieved from that file.
 
-This is especially useful when setting up a Zoom meeting for special events; the local app "administrator" can export his settings file with whatever Zoom codes or program URLs are needed, and then make this file publicly accessible. All those who are configured to be synced to that particular settings file will then have the possibility of connecting to the appropriate meetings when needed.
+This is especially useful when setting up a Zoom meeting for special events; the local app "administrator" can export their settings file with whatever Zoom codes or program URLs are needed, and then make this file publicly accessible. All those who are configured to be synced to that particular settings file will then have the possibility of connecting to the appropriate meetings when needed.
 
 This feature can also be useful to set up different labels and meetings based on different users or groups, for example with elderly elders who need access to a special meeting ID and password, or for ones who speak a different language than the congregation, and would therefore be disoriented if the app's button labels weren't in their language.
 

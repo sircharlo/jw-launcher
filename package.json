@@ -1,6 +1,6 @@
 {
   "name": "jw-launcher",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "JW Launcher",
   "main": "main.js",
   "repository": {
@@ -17,11 +17,13 @@
     "graceful-fs": "^4.2.6",
     "is-port-reachable": "^3.0.0",
     "jquery": "^3.6.0",
+    "loudness": "^0.4.1",
     "os": "^0.1.1",
     "path": "^0.12.7",
     "popper.js": "^1.16.1",
     "power-control": "^1.0.0",
-    "select2": "^4.1.0-rc.0"
+    "select2": "^4.1.0-rc.0",
+    "urllib": "^2.37.1"
   },
   "build": {
     "appId": "sircharlo.jw-launcher",

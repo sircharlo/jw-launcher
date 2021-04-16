@@ -50,7 +50,9 @@ require("electron").ipcRenderer.on("goAhead", () => {
 
 function goAhead() {
   const axios = require("axios"),
+    curl = require("urllib"),
     fs = require("graceful-fs"),
+    loudness = require("loudness"),
     os = require("os"),
     path = require("path"),
     powerControl = require("power-control"),
@@ -109,7 +111,7 @@ function goAhead() {
         prefs[$(this).prop("id")] = $(this).prop("checked");
       } else if ($(this).prop("type") == "radio") {
         prefs[$(this).closest("div").prop("id")] = $(this).closest("div").find("input:checked").val();
-      } else if ($(this).prop("type") == "text" || $(this).prop("type") == "password") {
+      } else if ($(this).prop("type") == "text" || $(this).prop("type") == "password" || $(this).prop("type") == "range") {
         prefs[$(this).prop("id")] = $(this).val();
       }
     } else if ($(this).prop("tagName") == "SELECT") {
@@ -164,16 +166,146 @@ function goAhead() {
     $("#videoPlayer").fadeOut();
     $("#videoPlayer video").remove();
   });
-  $("#broadcast1button, #btnGoHome").on("click", function() {
+  $("#broadcast1button").on("click", function() {
+    $("#videos>div").show();
+    $(".streamingVideos").first().parent().hide();
+    $("#videoPlayer").hide();
     toggleScreen("videos");
   });
-  $("#zoom1Button, #zoom2Button, #zoom3Button").on("click", function () {
-    var zoomButton = $(this).prop("id").replace(/\D/g, "");
+  $("#btnGoHome, #btnGoHome2").on("click", function() {
+    toggleScreen("videos");
+    $("#lblGoHome2").html("");
+  });
+  $(".streamingVideos").on("click", ".card:not(#btnGoHome2)", function() {
+    $("#videoPlayer").append("<video controls autoplay><source src='" + $(this).data("url") + "' / ></video>").fadeIn();
+  });
+
+  $("#link1Button, #link2Button, #link3Button").on("click", async function () {
+    var linkButton = $(this).prop("id").replace(/\D/g, "");
     try {
-      shell.openExternal("zoommtg://zoom.us/join?confno=" + $("#zoom" + zoomButton + "Id").val() + "&pwd=" + $("#zoom" + zoomButton + "Password").val() + "&uname=" + username);
+      if ($("#link" + linkButton + "Type").val() == "zoom") {
+        shell.openExternal("zoommtg://zoom.us/join?confno=" + $("#link" + linkButton + "Id").val() + "&pwd=" + $("#link" + linkButton + "Password").val() + "&uname=" + username);
+      } else {
+        $("#videos>div").hide();
+        $(".streamingVideos").first().parent().show();
+        $(".streamingVideos .card:not(#btnGoHome2)").remove();
+        toggleScreen("videos");
+        var tempUrl = $("#link" + linkButton + "Url").val();
+        var initialUrl = tempUrl;
+        var streamReq = await curl.request(tempUrl);
+        var cookies = {};
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+
+        var tempHeaders = {
+          authority: "fle.stream.jw.org",
+          "content-length": "0",
+          "sec-ch-ua": "\"Google Chrome\";v=\"89\", \"Chromium\";v=\"89\", \";Not A Brand\";v=\"99\"",
+          "x-xsrf-token": cookies["XSRF-TOKEN"],
+          accept: "application/json, text/plain, */*",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36",
+          "x-requested-with": "XMLHttpRequest",
+          origin: "https://fle.stream.jw.org",
+          referer: decodeURIComponent(tempUrl),
+          "accept-language": "en-CA,en;q=0.9,en-US;q=0.8,fr;q=0.7,ru;q=0.6",
+          cookie: "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS,
+          "sec-fetch-site": "same-origin",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "sec-ch-ua-mobile": "?0",
+          dnt: "1"
+        };
+
+        tempUrl = "https://fle.stream.jw.org/language/getlanguages";
+        streamReq = await curl.request(tempUrl, {
+          method: "POST",
+          headers: tempHeaders
+        });
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+        var streamLangs = JSON.parse(streamReq.data.toString()).languages;
+
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+        delete tempHeaders["content-length"];
+        tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
+        tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
+        var tempContent = JSON.stringify({
+          token: decodeURIComponent(initialUrl).split("/").slice(-1)[0]
+        });
+        tempUrl = "https://fle.stream.jw.org/token/check";
+        streamReq = await curl.request(tempUrl, {
+          method: "POST",
+          headers: tempHeaders,
+          content: tempContent
+        });
+
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+        tempHeaders["content-length"] = "0";
+        tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
+        tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
+        tempUrl = "https://fle.stream.jw.org/member/getinfo";
+        streamReq = await curl.request(tempUrl, {
+          method: "POST",
+          headers: tempHeaders
+        });
+
+        var streamLang = JSON.parse(streamReq.data.toString()).data.language;
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+        delete tempHeaders["content-length"];
+        tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
+        tempHeaders.referer = "https://fle.stream.jw.org/video/" + streamLang;
+        tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
+        tempContent = JSON.stringify({
+          language: streamLangs.filter(lang => lang.locale == streamLang)[0]
+        });
+        var langSymbol = streamLangs.filter(lang => lang.locale == streamLang)[0].symbol;
+        tempUrl = "https://fle.stream.jw.org/event/languageVideos";
+        streamReq = await curl.request(tempUrl, {
+          method: "POST",
+          headers: tempHeaders,
+          content: tempContent
+        });
+        var streamFiles = JSON.parse(streamReq.data.toString());
+        for (let cookie of streamReq.headers["set-cookie"]) {
+          cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
+        }
+        tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
+        tempHeaders.referer = "https://fle.stream.jw.org/video/";
+        tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
+        streamFiles = streamFiles.sort((a, b) => (a.data.origevent > b.data.origevent) ? 1 : -1);
+        var streamLabels = await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json");
+        // button_previous
+        $("#lblGoHome2").html(streamLabels.translations[langSymbol]["button_previous"]);
+        for (var streamFile of streamFiles) {
+          console.log(streamFile);
+          var mediaFile = await curl.request(streamFile.vod_firstfile_url, {
+            method: "HEAD",
+            headers: {
+              Cookie: "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS
+            },
+            followRedirect: true
+          });
+          $(".streamingVideos").append("\
+            <div class=\"card mx-3 rounded\" style=\"width: 18rem;\" data-url=\"" + mediaFile.res.requestUrls.slice(-1)[0] + "\"> \
+              <div class=\"card-body\"> \
+                <h5 class=\"card-title break-please\"> \
+                  " + streamFile.description +" \
+                </h5> \
+              </div> \
+            </div>");
+        }
+      }
     } catch(err) {
       toggleScreen("overlaySettings", true);
-      $("#zoom" + zoomButton + "Id, #zoom" + zoomButton + "Password").val("").addClass("invalid").change();
+      $("#link" + linkButton + "Id, #link" + linkButton + "Password").addClass("invalid").change();
       console.error(err);
     }
   });
@@ -192,7 +324,7 @@ function goAhead() {
     shell.openExternal(path.join(appPath, qsFilename));
     $(this).html(initialTriggerText).prop("disabled", false);
   });
-  $("#zoom1Id, #zoom2Id, #zoom3Id").keyup(function (event) {
+  $("#link1Id, #link2Id, #link3Id").keyup(function (event) {
     if (event.which != 8 && event.which != 0 && event.which < 48 || event.which > 57) {
       $(this).val(function (index, value) {
         return value.replace(/\D/g, "");
@@ -214,6 +346,13 @@ function goAhead() {
     remoteApp.setLoginItemSettings({
       openAtLogin: prefs.autoRunAtBoot
     });
+    console.log();
+    if (prefs.targetVolume == 0) {
+      loudness.setMuted(true);
+    } else {
+      loudness.setMuted(false);
+      loudness.setVolume(prefs.targetVolume);
+    }
     if (localPrefs.username) {
       username = localPrefs.username;
     }
@@ -274,24 +413,31 @@ function goAhead() {
     $("#overlaySettings label.text-danger").removeClass("text-danger");
     $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
     for (var elem of ["1", "2", "3"]) {
-      if ($("#zoom" + elem + "Desc").val() == "false" || $("#zoom" + elem + "Desc").val() == "null") {
-        $("#zoom" + elem + "Desc").val("");
+      if ($("#link" + elem + "Desc").val() == "false" || $("#link" + elem + "Desc").val() == "null") {
+        $("#link" + elem + "Desc").val("");
       }
-      if (!$("#zoom" + elem + "Desc").val()) {
-        $("#zoom" + elem + "Id, #zoom" + elem + "Password").prop("disabled", true).val("");
-        $("#zoom" + elem + "Button").fadeOut();
+      if (!$("#link" + elem + "Desc").val()) {
+        $("#link" + elem + "Id, #link" + elem + "Password").prop("disabled", true).val("");
+        $("#link" + elem + "Button").fadeOut();
       } else {
-        $("#zoom" + elem + "Button").html($("#zoom" + elem + "Desc").val());
-        if (!$("#zoom" + elem + "Id").val() || !$("#zoom" + elem + "Password").val()) {
-          $("#zoom" + elem + "Id, #zoom" + elem + "Password").addClass("invalid").prop("disabled", false);
+        $("#link" + elem + "Button").html($("#link" + elem + "Desc").val());
+        if (!$("#link" + elem + "Id").val() || !$("#link" + elem + "Password").val()) {
+          $("#link" + elem + "Id, #link" + elem + "Password").addClass("invalid").prop("disabled", false);
           configIsValid = false;
         } else {
-          $("#zoom" + elem + "Button").fadeIn();
+          $("#link" + elem + "Button").fadeIn();
         }
       }
-      if (!$("#zoom1Desc").val() && !$("#zoom2Desc").val() && !$("#zoom3Desc").val()) {
-        $("#zoom1Desc").addClass("invalid");
+      if (!$("#link1Desc").val() && !$("#link2Desc").val() && !$("#link3Desc").val()) {
+        $("#link1Desc").addClass("invalid");
         configIsValid = false;
+      }
+      if ($("#link" + elem + "Type").val() == "zoom") {
+        $(".link" + elem + "UrlContainer").hide().removeClass("d-flex");
+        $(".link" + elem + "ZoomContainer").addClass("d-flex").show();
+      } else {
+        $(".link" + elem + "ZoomContainer").hide().removeClass("d-flex");
+        $(".link" + elem + "UrlContainer").addClass("d-flex").show();
       }
       $("#overlaySettings .invalid").each(function() {
         $(this).closest("div.flex-row").find("label").addClass("text-danger");
@@ -347,11 +493,11 @@ function goAhead() {
     }
   }
   function prefsInitialize() {
-    for (var pref of ["updateUrl", "zoom1Desc", "zoom1Id", "zoom1Password", "zoom2Desc", "zoom2Id", "zoom2Password", "zoom3Desc", "zoom3Id", "zoom3Password", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance"]) {
+    for (var pref of ["updateUrl", "link1Desc", "link1Type", "link1Url", "link1Id", "link1Password", "link2Desc", "link2Type", "link2Url", "link2Id", "link2Password", "link3Desc", "link3Type", "link3Url", "link3Id", "link3Password", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance", "targetVolume"]) {
       if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
         prefs[pref] = null;
       }
-      if ($("#" + pref)[0].type == "text") {
+      if ($("#" + pref)[0].type == "text" || $("#" + pref)[0].type == "select-one" || $("#" + pref)[0].type == "range") {
         $("#" + pref).val(prefs[pref]);
       } else if ($("#" + pref)[0].type == "checkbox") {
         $("#" + pref).prop("checked", prefs[pref]);

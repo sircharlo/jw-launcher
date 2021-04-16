@@ -60,7 +60,7 @@
       font-size: 3vh !important;
     }
 
-    #videos h5,
+    #videos h5:not(.break-please),
     #videos h6 {
       font-size: 2vh;
       white-space: nowrap;
@@ -157,105 +157,139 @@
       <i id="settingsIcon" class="fas fa-fw fa-user-cog fa-3x text-muted"></i>
     </div>
     <div class="d-flex flex-row flex-fill align-items-center">
-      <label for="updateUrl" class="col-sm-4 m-0 text-right">Settings URL</label>
-      <div class="flex-fill">
+      <label for="updateUrl" class="col-3 m-0 text-right">Settings URL</label>
+      <div class="col-9">
         <input type="text" class="form-control form-control-sm" id="updateUrl" required />
       </div>
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center localSettings">
-      <label for="username" class="col-sm-4 m-0 text-right">Name of user</label>
-      <div class="flex-fill">
+      <label for="username" class="col-3 m-0 text-right">Name of user</label>
+      <div class="col-9">
         <input type="text" class="form-control form-control-sm" id="username" required />
       </div>
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom1Desc" class="col-sm-4 m-0 text-right">Meeting 1</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom1Desc" required />
+      <label for="link1Desc" class="col-3 m-0 text-right">Link 1</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link1Desc" required />
+      </div>
+      <select id="link1Type" class="custom-select col-6">
+        <option value="zoom">Zoom</option>
+        <option value="stream">JW Stream (Convention/Assembly)</option>
+        <option value="url" disabled>Custom URL</option>
+      </select>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings link1ZoomContainer">
+      <label for="link1Id" class="col-3 m-0 text-right">Meeting ID</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link1Id" required />
+      </div>
+      <label for="link1Password" class="col-3 px-3 m-0 text-right">Meeting Password</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link1Password" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom1Id" class="col-sm-4 m-0 text-right">Meeting ID</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom1Id" required />
-      </div>
-      <label for="zoom1Password" class="px-3 m-0 text-right">Meeting Password</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom1Password" required />
-      </div>
-    </div>
-    <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom2Desc" class="col-sm-4 m-0 text-right">Meeting 2</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom2Desc" required />
-      </div>
-    </div>
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom2Id" class="col-sm-4 m-0 text-right">Meeting ID</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom2Id" required />
-      </div>
-      <label for="zoom2Password" class="px-3 m-0 text-right">Meeting Password</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom2Password" required />
+    <div class="flex-row flex-fill align-items-center syncedSettings link1UrlContainer" style="display: none">
+      <label for="link1Id" class="col-3 m-0 text-right">URL</label>
+      <div class="col-9">
+        <input type="text" class="form-control form-control-sm" id="link1Url" required />
       </div>
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom3Desc" class="col-sm-4 m-0 text-right">Meeting 3</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom3Desc" required />
+      <label for="link2Desc" class="col-3 m-0 text-right">Link 2</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link2Desc" required />
+      </div>
+      <select id="link2Type" class="custom-select col-6">
+        <option value="zoom">Zoom</option>
+        <option value="stream">JW Stream (Convention/Assembly)</option>
+        <option value="url" disabled>Custom URL</option>
+      </select>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings link2ZoomContainer">
+      <label for="link2Id" class="col-3 m-0 text-right">Meeting ID</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link2Id" required />
+      </div>
+      <label for="link2Password" class="col-3 px-3 m-0 text-right">Meeting Password</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link2Password" required />
       </div>
     </div>
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="zoom3Id" class="col-sm-4 m-0 text-right">Meeting ID</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom3Id" required />
-      </div>
-      <label for="zoom3Password" class="px-3 m-0 text-right">Meeting Password</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="zoom3Password" required />
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings link2UrlContainer" style="display: none">
+      <label for="link2Id" class="col-3 m-0 text-right">URL</label>
+      <div class="col-9">
+        <input type="text" class="form-control form-control-sm" id="link2Url" required />
       </div>
     </div>
     <hr class="my-2" />
     <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="labelShutdown" class="col-sm-4 m-0 text-right">Shutdown label</label>
-      <div class="flex-fill">
+      <label for="link3Desc" class="col-3 m-0 text-right">Link 3</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link3Desc" required />
+      </div>
+      <select id="link3Type" class="custom-select col-6">
+        <option value="zoom">Zoom</option>
+        <option value="stream">JW Stream (Convention/Assembly)</option>
+        <option value="url" disabled>Custom URL</option>
+      </select>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings link3ZoomContainer">
+      <label for="link3Id" class="col-3 m-0 text-right">Meeting ID</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link3Id" required />
+      </div>
+      <label for="link3Password" class="col-3 px-3 m-0 text-right">Meeting Password</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="link3Password" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings link3UrlContainer" style="display: none">
+      <label for="link3Id" class="col-3 m-0 text-right">URL</label>
+      <div class="col-9">
+        <input type="text" class="form-control form-control-sm" id="link3Url" required />
+      </div>
+    </div>
+    <hr class="my-2" />
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
+      <label for="labelShutdown" class="col-3 m-0 text-right">Shutdown label</label>
+      <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="labelShutdown" required />
       </div>
-    </div>
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="labelRemoteAssistance" class="col-sm-4 m-0 text-right">Remote assistance label</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="labelRemoteAssistance" required />
-      </div>
-    </div>
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <label for="labelSettings" class="col-sm-4 m-0 text-right">Settings label</label>
-      <div class="flex-fill">
-        <input type="text" class="form-control form-control-sm" id="labelSettings" required />
-      </div>
-    </div>
-    <hr class="my-2" />
-    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
-      <div class="custom-control custom-switch col-2 notLinux">
-        <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
-        <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>
-      </div>
-      <div class="custom-control custom-switch col-2">
-        <input type="checkbox" class="custom-control-input" id="hideRemoteAssistance" />
-        <label class="custom-control-label" for="hideRemoteAssistance">Hide remote assistance</label>
-      </div>
-      <div class="custom-control custom-switch col-2">
+      <div class="custom-control custom-switch col-6">
         <input type="checkbox" class="custom-control-input" id="hideShutdown" />
         <label class="custom-control-label" for="hideShutdown">Hide shutdown</label>
       </div>
-      <div class="col d-flex align-items-center syncedSettings">
-        <label for="broadcastLang" class="mr-3 mb-0">Language for broadcast</label>
-        <select style="width: 20vw" id="broadcastLang"></select>
+      <label for="labelSettings" class="col-2 m-0 text-right">Settings label</label>
+      <div class="col-2">
+        <input type="text" class="form-control form-control-sm" id="labelSettings" required />
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill align-items-center syncedSettings">
+      <label for="labelRemoteAssistance" class="col-3 m-0 text-right">Remote assistance label</label>
+      <div class="col-3">
+        <input type="text" class="form-control form-control-sm" id="labelRemoteAssistance" required />
+      </div>
+      <div class="custom-control custom-switch col-6">
+        <input type="checkbox" class="custom-control-input" id="hideRemoteAssistance" />
+        <label class="custom-control-label" for="hideRemoteAssistance">Hide remote assistance</label>
+      </div>
+    </div>
+    <div class="d-flex flex-row flex-fill syncedSettings">
+      <label for="broadcastLang" class="mr-3 mb-0 col-3 text-right">Language for broadcast</label>
+      <select class="col-3" id="broadcastLang"></select>
+    </div>
+    <div class="d-flex flex-row flex-fill syncedSettings">
+      <label for="targetVolume" class="mr-3 mb-0 col-3 text-right">System volume</label>
+      <div class="col-3">
+        <input type="range" class="form-control-range" id="targetVolume">
+      </div>
+      <div class="custom-control custom-switch col-6 notLinux">
+        <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
+        <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>
       </div>
     </div>
     <div class="d-flex flex-row flex-fill align-items-center">
@@ -274,11 +308,11 @@
   </div>
   <div id="home" class="d-flex flex-column">
     <div class="align-items-center d-flex h-50 flex-fill justify-content-center actions my-2">
-      <button id="zoom1Button" type="button" class="btn btn-primary btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      <button id="link1Button" type="button" class="btn btn-primary btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
-      <button id="zoom2Button" type="button" class="btn btn-success btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      <button id="link2Button" type="button" class="btn btn-success btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
-      <button id="zoom3Button" type="button" class="btn btn-warning btn-lg h-100 mx-2 align-items-center col justify-content-center">
+      <button id="link3Button" type="button" class="btn btn-warning btn-lg h-100 mx-2 align-items-center col justify-content-center">
       </button>
     </div>
     <div class="align-items-center h-25 justify-content-center actions my-2" style="display: none;">
@@ -306,7 +340,7 @@
         <i class="fas fa-fw fa-times"></i>
       </div>
     </div>
-    <div class="align-items-center h-25 justify-content-center my-2">
+    <div class="align-items-center h-25 justify-content-center my-2" style="display: none;">
       <div class="featuredVideos justify-content-center d-flex h-100">
         <div class="col-3 d-flex flex-column bg-warning mx-3 rounded" id="btnGoHome">
           <div class="flex-grow-1 pt-2 d-flex align-items-center justify-content-center lblGoHome">
@@ -317,8 +351,19 @@
         </div>
       </div>
     </div>
-    <div class="align-items-center h-75 justify-content-center my-2 d-flex">
+    <div class="align-items-center h-75 justify-content-center my-2" style="display: none;">
       <div class="latestVideos justify-content-center"></div>
+    </div>
+    <div class="align-items-center h-100 justify-content-center my-2" style="display: none;">
+      <div class="streamingVideos justify-content-center d-flex">
+        <div class="card bg-warning mx-3 rounded" id="btnGoHome2" style="width: 18rem;">
+          <div class="card-body lblGoHome">
+            <h5 class="card-title">
+              <i class="fas fa-fw fa-chevron-circle-left"></i> <span id="lblGoHome2"></span>
+            </h5>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <script src="./launcher.js"></script>

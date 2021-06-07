@@ -23,7 +23,7 @@
     "popper.js": "^1.16.1",
     "power-control": "^1.0.0",
     "select2": "^4.1.0-rc.0",
-    "urllib": "^2.37.1"
+    "urllib": "^2.37.2"
   },
   "build": {
     "appId": "sircharlo.jw-launcher",

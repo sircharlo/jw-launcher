@@ -4,7 +4,7 @@
 <head>
   <title>JW Launcher</title>
   <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
-  <link rel="stylesheet" href="node_modules/bootstrap-dark-4/dist/bootstrap-dark.min.css">
+  <link rel="stylesheet" href="node_modules/bootstrap-dark-5/dist/css/bootstrap-dark.min.css">
   <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
     html,
@@ -14,7 +14,7 @@
     }
 
     .overlay {
-      background: var(--light);
+      background: var(--bs-light);
       position: fixed;
       height: 100%;
       width: 100%;
@@ -44,11 +44,11 @@
     }
 
     .invalid {
-      border-color: var(--danger) !important;
+      border-color: var(--bs-danger) !important;
     }
 
     #version span.badge {
-      color: var(--dark);
+      color: var(--bs-dark);
       font-weight: normal;
     }
 
@@ -84,7 +84,7 @@
   <meta name="color-scheme" content="light dark">
   <script>
     window.$ = window.jQuery = require('jquery');
-    window.popperjs = require('popper.js');
+    window.popperjs = require('@popperjs/core');
     window.Bootstrap = require('bootstrap');
     window.select2 = require('select2')(jQuery);
   </script>
@@ -175,7 +175,7 @@
       <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="link1Desc" required />
       </div>
-      <select id="link1Type" class="custom-select col-6">
+      <select id="link1Type" class="form-select col-6">
         <option value="zoom">Zoom</option>
         <option value="stream">JW Stream (Convention/Assembly)</option>
         <option value="url" disabled>Custom URL</option>
@@ -203,7 +203,7 @@
       <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="link2Desc" required />
       </div>
-      <select id="link2Type" class="custom-select col-6">
+      <select id="link2Type" class="form-select col-6">
         <option value="zoom">Zoom</option>
         <option value="stream">JW Stream (Convention/Assembly)</option>
         <option value="url" disabled>Custom URL</option>
@@ -231,7 +231,7 @@
       <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="link3Desc" required />
       </div>
-      <select id="link3Type" class="custom-select col-6">
+      <select id="link3Type" class="form-select col-6">
         <option value="zoom">Zoom</option>
         <option value="stream">JW Stream (Convention/Assembly)</option>
         <option value="url" disabled>Custom URL</option>
@@ -259,9 +259,9 @@
       <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="labelShutdown" required />
       </div>
-      <div class="custom-control custom-switch col-6">
-        <input type="checkbox" class="custom-control-input" id="hideShutdown" />
-        <label class="custom-control-label" for="hideShutdown">Hide shutdown</label>
+      <div class="form-check form-switch col-6">
+        <input type="checkbox" class="form-check-input" id="hideShutdown" />
+        <label class="form-check-label" for="hideShutdown">Hide shutdown</label>
       </div>
       <label for="labelSettings" class="col-2 m-0 text-right">Settings label</label>
       <div class="col-2">
@@ -273,9 +273,9 @@
       <div class="col-3">
         <input type="text" class="form-control form-control-sm" id="labelRemoteAssistance" required />
       </div>
-      <div class="custom-control custom-switch col-6">
-        <input type="checkbox" class="custom-control-input" id="hideRemoteAssistance" />
-        <label class="custom-control-label" for="hideRemoteAssistance">Hide remote assistance</label>
+      <div class="form-check form-switch col-6">
+        <input type="checkbox" class="form-check-input" id="hideRemoteAssistance" />
+        <label class="form-check-label" for="hideRemoteAssistance">Hide remote assistance</label>
       </div>
     </div>
     <div class="d-flex flex-row flex-fill syncedSettings">
@@ -287,9 +287,9 @@
       <div class="col-3">
         <input type="range" class="form-control-range" id="targetVolume">
       </div>
-      <div class="custom-control custom-switch col-6 notLinux">
-        <input type="checkbox" class="custom-control-input" id="autoRunAtBoot" />
-        <label class="custom-control-label" for="autoRunAtBoot">Autorun at startup</label>
+      <div class="form-check form-switch col-6 notLinux">
+        <input type="checkbox" class="form-check-input" id="autoRunAtBoot" />
+        <label class="form-check-label" for="autoRunAtBoot">Autorun at startup</label>
       </div>
     </div>
     <div class="d-flex flex-row flex-fill align-items-center">

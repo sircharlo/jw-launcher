@@ -14,7 +14,7 @@
     "axios": "^0.21.1",
     "bootstrap": "^5.0.1",
     "bootstrap-dark-5": "^1.0.1",
-    "electron-updater": "^4.3.9",
+    "electron-updater": "^4.3.10",
     "graceful-fs": "^4.2.6",
     "is-port-reachable": "^3.0.0",
     "jquery": "^3.6.0",

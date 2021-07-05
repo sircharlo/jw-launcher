@@ -23,7 +23,7 @@
     "path": "^0.12.7",
     "power-control": "^1.0.0",
     "select2": "^4.1.0-rc.0",
-    "urllib": "^2.37.2"
+    "urllib": "^2.37.3"
   },
   "build": {
     "appId": "sircharlo.jw-launcher",

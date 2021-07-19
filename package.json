@@ -48,7 +48,7 @@
   "devDependencies": {
     "electron": "^13.1.6",
     "electron-builder": "^22.11.7",
-    "eslint": "^7.30.0"
+    "eslint": "^7.31.0"
   },
   "scripts": {
     "start": "electron .",

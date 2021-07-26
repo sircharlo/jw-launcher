@@ -19,7 +19,7 @@
     "is-port-reachable": "^3.0.0",
     "jquery": "^3.6.0",
     "loudness": "^0.4.1",
-    "os": "^0.1.1",
+    "os": "^0.1.2",
     "path": "^0.12.7",
     "power-control": "^1.0.0",
     "select2": "^4.1.0-rc.0",
@@ -46,9 +46,9 @@
     "buildDependenciesFromSource": true
   },
   "devDependencies": {
-    "electron": "^13.1.6",
+    "electron": "^13.1.7",
     "electron-builder": "^22.11.7",
-    "eslint": "^7.30.0"
+    "eslint": "^7.31.0"
   },
   "scripts": {
     "start": "electron .",

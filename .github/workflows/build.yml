@@ -4,8 +4,8 @@ on:
   push:
     paths:
     - 'package.json'
-    - 'package-lock.json'
-
+    - '/.github/workflows/'
+    
 jobs:
   release:
     runs-on: ${{ matrix.os }}
@@ -16,16 +16,20 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
+        
+      - name: Get latest CMake and ninja
+        uses: lukka/get-cmake@latest
 
       - name: Install Node.js, NPM and Yarn
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v2.1.5
         with:
           node-version: 14
+          check-latest: true
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1.6.0
-
+        
         with:
           # GitHub token, automatically provided to the action
           # (No need to define this secret in the repo settings)

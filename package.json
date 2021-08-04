@@ -10,7 +10,7 @@
   "dependencies": {
     "@electron/remote": "^1.2.0",
     "@fortawesome/fontawesome-free": "^5.15.3",
-    "@popperjs/core": "^2.9.2",
+    "@popperjs/core": "^2.9.3",
     "axios": "^0.21.1",
     "bootstrap": "^5.0.2",
     "bootstrap-dark-5": "^1.0.2",

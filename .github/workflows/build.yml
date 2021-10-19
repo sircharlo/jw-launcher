@@ -5,7 +5,11 @@ on:
     paths:
     - 'package.json'
     - '/.github/workflows/'
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> e151d57e7b4378cc5853033db0faeb331cba7099
 jobs:
   release:
     runs-on: ${{ matrix.os }}
@@ -17,7 +21,11 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v2.3.4
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> e151d57e7b4378cc5853033db0faeb331cba7099
       - name: Get latest CMake and ninja
         uses: lukka/get-cmake@latest
 
@@ -29,7 +37,7 @@ jobs:
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1.6.0
-
+        
         with:
           # GitHub token, automatically provided to the action
           # (No need to define this secret in the repo settings)

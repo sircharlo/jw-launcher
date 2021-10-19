@@ -1,6 +1,6 @@
 {
   "name": "jw-launcher",
-  "version": "0.1.5",
+  "version": "21.10.00",
   "description": "JW Launcher",
   "main": "main.js",
   "repository": {
@@ -8,22 +8,20 @@
     "url": "https://github.com/sircharlo/jw-launcher.git"
   },
   "dependencies": {
-    "@electron/remote": "^1.2.0",
-    "@fortawesome/fontawesome-free": "^5.15.3",
-    "@popperjs/core": "^2.9.2",
-    "axios": "^0.21.1",
-    "bootstrap": "^5.0.2",
-    "bootstrap-dark-5": "^1.0.2",
+    "@electron/remote": "^2.0.1",
+    "@fortawesome/fontawesome-free": "^5.15.4",
+    "@popperjs/core": "^2.10.2",
+    "axios": "^0.23.0",
+    "bootstrap": "^5.1.3",
+    "bootstrap-dark-5": "^1.1.3",
     "electron-updater": "^4.3.10",
-    "graceful-fs": "^4.2.6",
-    "is-port-reachable": "^3.0.0",
+    "graceful-fs": "^4.2.8",
     "jquery": "^3.6.0",
     "loudness": "^0.4.1",
     "os": "^0.1.2",
     "path": "^0.12.7",
     "power-control": "^1.0.0",
-    "select2": "^4.1.0-rc.0",
-    "urllib": "^2.37.3"
+    "select2": "^4.1.0-rc.0"
   },
   "build": {
     "appId": "sircharlo.jw-launcher",
@@ -43,12 +41,22 @@
         "github"
       ]
     },
+    "mac": {
+      "target": {
+        "target": "default",
+        "arch": [
+          "universal"
+        ]
+      },
+      "publish": [
+        "github"
+      ]
+    },
     "buildDependenciesFromSource": true
   },
   "devDependencies": {
-    "electron": "^13.1.7",
-    "electron-builder": "^22.11.7",
-    "eslint": "^7.31.0"
+    "electron": "^15.2.0",
+    "electron-builder": "^22.13.1"
   },
   "scripts": {
     "start": "electron .",

@@ -2,19 +2,17 @@ const axios = require("axios"),
   net = require("net"),
   remote = require("@electron/remote"),
   fs = require("graceful-fs"),
-  loudness = require("loudness"),
   os = require("os"),
   path = require("path"),
   powerControl = require("power-control"),
   {shell} = require("electron"),
   $ = require("jquery");
 const appPath = remote.app.getPath("userData"),
-  localPrefsFile = path.join(appPath, "local-prefs.json"),
+  //          green      pink       cyan     bluegrey    indigo    deeporange   purple      red       teal        blue      brown    deeppurple
+  colors = ["#4caf50", "#e91e63", "#00acc1", "#78909c", "#5c6bc0", "#f4511e", "#ab47bc", "#e53935", "#26a69a", "#2196f3", "#a1887f", "#7e57c2"],
   prefsFile = path.join(appPath, "prefs.json");
 var broadcastStrings = {},
-  localPrefs = {},
-  prefs = {},
-  username = "User";
+  prefs = {};
 axios.defaults.adapter = require("axios/lib/adapters/http");
 async function checkInternet() {
   try {
@@ -33,7 +31,7 @@ require("electron").ipcRenderer.on("checkInternet", () => {
 });
 require("electron").ipcRenderer.on("hideThenShow", (event, message) => {
   $("#overlay" + message[1]).fadeIn(400, () => {
-    $("#overlay" + message[0]).fadeOut();
+    $("#overlay" + message[0]).hide();
   });
 });
 require("electron").ipcRenderer.on("updateDownloadProgress", (event, message) => {
@@ -41,55 +39,49 @@ require("electron").ipcRenderer.on("updateDownloadProgress", (event, message) =>
   $("#updatePercent i:nth-of-type(" + dotsDone + ")").addClass("fa-circle text-primary").removeClass("fa-dot-circle");
 });
 require("electron").ipcRenderer.on("macUpdate", () => {
-  $("#btn-mac-update").fadeIn().click(function() {
+  $("#btn-mac-update").click(function() {
     shell.openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
-  });
+  }).parent().fadeIn();
 });
 require("electron").ipcRenderer.on("goAhead", () => {
   $("#overlayPleaseWait").fadeIn(400, () => {
-    $("#overlayUpdateCheck").fadeOut();
+    $("#overlayUpdateCheck").hide();
     goAhead();
   });
 });
 function goAhead() {
-
   if (fs.existsSync(prefsFile)) {
     try {
       prefs = JSON.parse(fs.readFileSync(prefsFile));
+      updateCleanup();
     } catch (err) {
       console.error(err);
     }
     prefsInitialize();
   }
-  if (fs.existsSync(localPrefsFile)) {
-    try {
-      localPrefs = JSON.parse(fs.readFileSync(localPrefsFile));
-    } catch (err) {
-      console.error(err);
-    }
-    localPrefsInitialize();
-  }
   processSettings();
-  // if (prefs.updateUrl) {
-  //   $(".syncedSettings input").prop("disabled", true);
-  //   syncPrefs();
-  // }
-  updateCleanup();
-  (async () => {
-    var req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www");
-    for (var lang of req.languages) {
-      $("#broadcastLang").append($("<option>", {
-        value: lang.code,
-        text: lang.vernacular + " (" + lang.name + ")"
-      }));
-    }
-    $("#broadcastLang").val(prefs.broadcastLang);
-    $("#broadcastLang").select2();
-  })();
   $("#version span.badge").html("v" + remote.app.getVersion());
   $("#overlayPleaseWait").fadeOut();
   if (os.platform() == "linux") {
     $(".notLinux").removeClass("d-flex").fadeOut();
+  }
+  window.addEventListener("keyup", handleKeyPress, true);
+}
+function handleKeyPress (event) {
+  if (event.code.includes("Key") && !$("#overlayPleaseWait").is(":visible") && !(event.ctrlKey || event.metaKey || event.shiftKey)) {
+    if ($("#home").is(":visible")) {
+      if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").length + 65).toLowerCase()) {
+        $("#broadcast1button").click();
+      } else {
+        $(".actions .buttonContainer button").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+      }
+    } else if ($("#closeButton").is(":visible") && event.key.toLowerCase() == "x") {
+      $("#closeButton").click();
+    } else if ($(".featuredVideos").is(":visible") && !$("#closeButton").is(":visible")) {
+      $(".featuredVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+    } else if ($(".streamingVideos").is(":visible") && $("#closeButton").is(":not(:visible)")) {
+      $(".streamingVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+    }
   }
 }
 function isReachable(hostname, port) {
@@ -169,13 +161,13 @@ async function downloadFile(url, triggerElem) {
   }
 }
 function generateButtons() {
-  var colors = ["#03a9f4", "#d500f9", "#4caf50", "#f9a825", "#e64a19", "#ff4081", "#78909c", "#00bcd4"];
-  $(".actions").empty();
+  $(".actions .buttonContainer").remove();
   let links = $(".links tbody tr");
   for (let link = 0; link <links.length; link++) {
-    $(".actions").append("<div class='buttonContainer py-2'><button type='button' class='align-items-center btn btn-lg btn-" + $(links[link]).find(".linkType").val() + " h-100 w-100' style='background-color: " + colors[(link % colors.length)] + "' data-link-details='" + $(links[link]).find(".linkDetails input").map(function () { return $(this).val(); }).get() + "'>" + $(links[link]).find(".linkName").val() + "</button></div>");
+    $(".actions").append("<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" + $(links[link]).find(".linkType").val() + " d-flex flex-column h-100 w-100' style='background-color: " + colors[(link % colors.length)] + "' data-link-details='" + $(links[link]).find(".linkDetails input").map(function () { return $(this).val(); }).get() + "'><div><kbd>" + String.fromCharCode(link + 65) + "</kbd></div><div class='align-items-center d-flex flex-fill'>" + $(links[link]).find(".linkName").val() + "</div></button></div>");
   }
-  $(".actions .buttonContainer").css("height", 100 / Math.ceil($(".linkType").length / 3) + "%");
+  $(".actions > .buttonContainer, .actions > .broadcastContainer").css("height", 100 / Math.ceil($(".actions > .buttonContainer, .actions > .broadcastContainer").length / 3) + "%");
+  $(".actions").append($(".actions > .broadcastContainer"));
 }
 async function getJson(url) {
   let response = null,
@@ -188,20 +180,8 @@ async function getJson(url) {
   }
   return response;
 }
-function localPrefsInitialize() {
-  for (var localPref of ["username"]) {
-    if (!(Object.keys(localPrefs).includes(localPref)) || !localPrefs[localPref]) {
-      localPrefs[localPref] = null;
-    }
-    if ($("#" + localPref)[0].type == "text") {
-      $("#" + localPref).val(localPrefs[localPref]);
-    } else if ($("#" + localPref)[0].type == "checkbox") {
-      $("#" + localPref).prop("checked", localPref[localPref]);
-    }
-  }
-}
-function prefsInitialize() {
-  for (var pref of [/*"updateUrl",*/ "linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance", "targetVolume"]) {
+async function prefsInitialize() {
+  for (var pref of ["linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance", "username"]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
       prefs[pref] = null;
     }
@@ -225,122 +205,92 @@ function prefsInitialize() {
       $("#" + pref).prop("checked", prefs[pref]);
     }
   }
+  for (var lang of (await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www")).languages) {
+    $("#broadcastLang").append($("<option>", {
+      value: lang.code,
+      text: lang.vernacular + " (" + lang.name + ")"
+    }));
+  }
+  if (prefs.broadcastLang) $("#broadcastLang").val(prefs.broadcastLang).select2();
 }
-function processSettings() {
+async function processSettings() {
   var configIsValid = true;
   for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
     $("#lbl" + label).html(prefs["label" + label]);
   }
   for (var hideMe of ["Shutdown", "RemoteAssistance"]) {
     if (prefs["hide" + hideMe]) {
-      $("#btn" + hideMe).fadeOut();
+      $("#btn" + hideMe).parent().fadeOut();
     } else {
-      $("#btn" + hideMe).fadeIn();
+      $("#btn" + hideMe).parent().fadeIn();
     }
   }
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
-  if (prefs.targetVolume == 0) {
-    loudness.setMuted(true);
-  } else {
-    loudness.setMuted(false);
-    loudness.setVolume(prefs.targetVolume);
-  }
-  if (localPrefs.username) {
-    username = localPrefs.username;
-  }
   if (prefs.broadcastLang) {
-    (async () => {
-      let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
-      broadcastStrings = req.translations[prefs.broadcastLang];
-      $("#broadcast1button").html(broadcastStrings.ttlHome);
-      $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
-      var videos = 0;
-      try {
-        $(".featuredVideos .col:not(:first)").remove();
-        var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
-        var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
-        let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
-        allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
-        for (var featuredVideo of allVideos) {
-          videos++;
-          var featuredVideoElement = $("<div class='col p-2'><div class='d-flex flex-column h-100 rounded bg-light' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-grow-1 pt-2 px-2 d-flex align-items-center'><h5>" + featuredVideo.title + "</h5></div></div></div>").click(function() {
-            $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
-            $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
-          });
-          $(".featuredVideos").append(featuredVideoElement);
-        }
-      } catch(err) {
-        console.error(err);
+    let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
+    broadcastStrings = req.translations[prefs.broadcastLang];
+    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").length + 65) + "</kbd></div><div class='align-items-center d-flex flex-fill'>" + broadcastStrings.ttlHome + "</div>");
+    $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
+    var videos = 0;
+    try {
+      $(".featuredVideos > div:not(:first)").remove();
+      var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
+      var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
+      let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
+      allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
+      for (var featuredVideo of allVideos) {
+        videos++;
+        var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light d-flex flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='d-flex flex-column flex-fill m-2'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center d-flex flex-fill flex-row'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
+          $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
+          $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
+        });
+        $(".featuredVideos").append(featuredVideoElement);
       }
-      if (videos > 0) {
-        $("#broadcast1button").parent().fadeIn();
-      } else {
-        $("#broadcast1button").parent().fadeOut();
-      }
-    })();
+      $(".featuredVideos > div").css("height", 100 / Math.ceil($(".featuredVideos > div").length / 5) + "%");
+    } catch(err) {
+      console.error(err);
+    }
+    $("#broadcast1button").toggle(videos > 0);
   }
-  $("#overlaySettings label.text-danger").removeClass("text-danger");
-  $("#overlaySettings .invalid").removeClass("invalid").prop("disabled", false);
-  if (configIsValid) {
-    generateButtons();
-    $(".btnSettings").prop("disabled", false).addClass("btn-primary").removeClass("btn-danger");
-    $("#settingsIcon").addClass("text-muted").removeClass("text-danger");
-    return true;
-  } else {
-    $(".btnSettings").prop("disabled", true).addClass("btn-danger").removeClass("btn-primary");
-    $("#settingsIcon").addClass("text-danger").removeClass("text-muted");
-    toggleScreen("overlaySettings", true);
-    return false;
+  for (var setting of ["broadcastLang", "username"]) {
+    if (!prefs[setting]) {
+      configIsValid = false;
+    }
+    $("#" + setting).toggleClass("is-invalid", !prefs[setting]).next("span.select2").toggleClass("is-invalid", !prefs[setting]);
   }
+  $(".btnSettings").prop("disabled", !configIsValid).toggleClass("btn-danger", !configIsValid).toggleClass("btn-primary", configIsValid);
+  $("#settingsIcon").toggleClass("text-danger", !configIsValid).toggleClass("text-muted", configIsValid);
+  if (configIsValid) generateButtons();
+  if (!configIsValid) toggleScreen("overlaySettings", true);
+  return configIsValid;
 }
-// function syncPrefs() {
-//   axios.get($("#updateUrl").val()).then((res) => {
-//     prefs = res.data;
-//     fs.writeFileSync(prefsFile, JSON.stringify(prefs, null, 2));
-//     prefsInitialize();
-//     processSettings();
-//   }).catch((error) => {
-//     console.error(error);
-//     $("#updateUrl").addClass("invalid");
-//   });
-// }
 function toggleScreen(screen, forceShow, forceHide) {
   var visible = $("#" + screen).is(":visible");
   if (forceShow) {
-    $("#" + screen).slideDown("fast");
-  } else if (forceHide) {
-    $("#" + screen).slideUp("fast");
-  } else if (visible) {
-    $("#" + screen).slideUp("fast");
+    $("#" + screen).fadeIn("fast");
+    $("#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : "")).hide();
+  } else if (forceHide || visible) {
+    $("#home").show();
+    $("#" + screen).fadeOut("fast");
   } else {
-    $("#" + screen).slideDown("fast");
+    $("#" + screen).fadeIn("fast");
+    $("#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : "")).hide();
   }
 }
 function updateCleanup() {
-  if (prefs.link1Type) {
-    let oldPrefs = [], newPrefs = [];
-    for (let num of [1,2,3]) {
-      let oldPref = {};
-      for (let type of ["Type", "Desc", "Id", "Password", "Url"]) {
-        if ("link" + num + type in prefs) {
-          oldPref[type] = prefs["link" + num + type];
-          delete prefs["link" + num + type];
-        }
-      }
-      oldPrefs.push(oldPref);
+  try {
+    let localPrefsFile = path.join(appPath, "local-prefs.json");
+    if (fs.existsSync(localPrefsFile)) {
+      let localPrefs = JSON.parse(fs.readFileSync(localPrefsFile));
+      prefs.username = localPrefs.username;
+      fs.rmSync(localPrefsFile);
     }
-    for (let oldPref of oldPrefs) {
-      let newPref = [oldPref.Type, oldPref.Desc];
-      if (oldPref.Type == "zoom") newPref.push(oldPref.Id, oldPref.Password);
-      if (oldPref.Type == "stream") newPref.push([oldPref.Url.replace("https://fle.stream.jw.org/", "")]);
-      newPrefs.push(newPref);
-    }
-    prefs.linkArray = JSON.stringify(newPrefs);
+    if ("targetVolume" in prefs) delete prefs.targetVolume;
     fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
-    remote.app.relaunch();
-    remote.app.quit();
+  } catch (err) {
+    console.error(err);
   }
 }
 $(".btnSettings, #btnSettings").on("click", function() {
@@ -361,51 +311,24 @@ $(".syncedSettings input, .syncedSettings select, input.syncedSettings").on("cha
   fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
   processSettings();
 });
-$(".localSettings input, .localSettings select").on("change", function() {
-  if ($(this).prop("tagName") == "INPUT") {
-    if ($(this).prop("type") == "checkbox") {
-      localPrefs[$(this).prop("id")] = $(this).prop("checked");
-    } else if ($(this).prop("type") == "radio") {
-      localPrefs[$(this).closest("div").prop("id")] = $(this).closest("div").find("input:checked").val();
-    } else if ($(this).prop("type") == "text" || $(this).prop("type") == "password") {
-      localPrefs[$(this).prop("id")] = $(this).val();
-    }
-  } else if ($(this).prop("tagName") == "SELECT") {
-    localPrefs[$(this).prop("id")] = $(this).find("option:selected").val();
-  }
-  fs.writeFileSync(localPrefsFile, JSON.stringify(Object.keys(localPrefs).sort().reduce((acc, key) => ({...acc, [key]: localPrefs[key]}), {}), null, 2));
-  processSettings();
-});
 $("#autoRunAtBoot").on("change", function() {
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
 });
 $("#broadcastLang").on("change", function() {
-  $(".featuredVideos div:not(#btnGoHome):not(.lblGoHome)").remove();
+  $(".featuredVideos > div:not(:first-of-type)").remove();
 });
-// $("#updateUrl").on("change", function() {
-//   if ($(this).val().length > 0) {
-//     $(".syncedSettings input").prop("disabled", true);
-//     syncPrefs();
-//   } else {
-//     prefs.updateUrl = $(this).val();
-//     fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
-//     $(".syncedSettings input").prop("disabled", false);
-//   }
-// });
 $("#btnShutdown").on("click", function() {
   powerControl.powerOff();
 });
 $("#btnExport").on("click", function() {
-  var path = remote.dialog.showSaveDialogSync({
+  fs.writeFileSync(remote.dialog.showSaveDialogSync({
     defaultPath : "prefs.json"
-  });
-  fs.writeFileSync(path, JSON.stringify(prefs, null, 2));
+  }), JSON.stringify(prefs, null, 2));
 });
 $("#closeButton").on("click", function() {
-  $("#videoPlayer").fadeOut();
-  $("#videoPlayer video").remove();
+  $("#videoPlayer").fadeOut().find("video").remove();
 });
 $("#broadcast1button").on("click", function() {
   $("#videos>div").show();
@@ -415,22 +338,22 @@ $("#broadcast1button").on("click", function() {
 });
 $("#btnGoHome, #btnGoHome2").on("click", function() {
   toggleScreen("videos");
-  $("#lblGoHome2").html("");
 });
 $(".streamingVideos").on("click", ".flex-column", function() {
   $("#videoPlayer").append("<video controls autoplay><source src='" + $(this).data("url") + "' / ></video>").fadeIn();
 });
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
-  shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0] + "&pwd=" + linkDetails[1] + "&uname=" + username);
+  shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0] + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
+  $("#overlayPleaseWait").fadeIn().delay(10000).fadeOut();
 });
 $(".actions").on("click", ".btn-stream", async function () {
+  toggleScreen("overlayPleaseWait");
   let linkDetails = "https://fle.stream.jw.org/" + $(this).data("link-details").split(",")[0];
   try {
     $("#videos>div").hide();
     $(".streamingVideos").first().parent().show();
-    $(".streamingVideos .col:not(:first)").remove();
-    toggleScreen("videos");
+    $(".streamingVideos > div:not(:first)").remove();
     var initialUrl = linkDetails;
     var streamReq = await axios.head(linkDetails);
     var cookies = {};
@@ -508,14 +431,16 @@ $(".actions").on("click", ".btn-stream", async function () {
     //streamFiles = streamFiles.sort((a, b) => (a.data.origevent > b.data.origevent) ? 1 : -1);
     var streamLabels = await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json");
     $("#lblGoHome2").html(streamLabels.translations[langSymbol]["button_previous"]);
-    for (var streamFile of streamFiles) {
-      var mediaFile = await axios.head(streamFile.vod_firstfile_url, {
+    for (var streamFile of Object.entries(streamFiles)) {
+      var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, {
         headers: {
           Cookie: "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS
         }
       });
-      $(".streamingVideos").append("<div class='col p-2'><div class='d-flex flex-column h-100 rounded bg-light' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "'><div class='flex-grow-1 pt-2 px-2 d-flex align-items-center'><h2>" + streamFile.description + "</h2></div></div></div>");
+      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='d-flex flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center d-flex flex-fill flex-row'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
+    $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
+    toggleScreen("videos");
   } catch(err) {
     toggleScreen("overlaySettings", true);
     console.error(linkDetails, err);

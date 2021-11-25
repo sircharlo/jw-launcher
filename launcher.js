@@ -8,27 +8,29 @@ const axios = require("axios"),
   {shell} = require("electron"),
   $ = require("jquery");
 const appPath = remote.app.getPath("userData"),
-  //          green      pink       cyan     bluegrey    indigo    deeporange   purple      red       teal        blue      brown    deeppurple
-  colors = ["#4caf50", "#e91e63", "#00acc1", "#78909c", "#5c6bc0", "#f4511e", "#ab47bc", "#e53935", "#26a69a", "#2196f3", "#a1887f", "#7e57c2"],
+  //          green      pink       blue     deeporange   purple     yellow      cyen      brown
+  colors = ["#00e676", "#ff80ab", "#64b5f6", "#ffb74d", "#ea80fc", "#ffff8d", "#18ffff", "#bcaaa4"],
   prefsFile = path.join(appPath, "prefs.json");
 var broadcastStrings = {},
   prefs = {};
 axios.defaults.adapter = require("axios/lib/adapters/http");
-async function checkInternet() {
-  try {
-    if (await isReachable("www.zoom.us", 443)) {
-      require("electron").ipcRenderer.send("autoUpdate");
-    } else {
-      require("electron").ipcRenderer.send("noInternet");
-    }
-  } catch (err) {
-    console.error(err);
+function checkInternet(online) {
+  if (online) {
+    $("#overlayInternetCheck").fadeIn("fast", () => {
+      $("#overlayInternetFail").stop().hide();
+    });
+    require("electron").ipcRenderer.send("autoUpdate");
+  } else {
+    $("#overlayInternetFail").fadeIn("fast", () => {
+      $("#overlayInternetCheck").stop().hide();
+    });
+    setTimeout(updateOnlineStatus, 1000);
   }
 }
-checkInternet();
-require("electron").ipcRenderer.on("checkInternet", () => {
-  checkInternet();
-});
+const updateOnlineStatus = async () => {
+  checkInternet((await isReachable("www.jw.org", 443)));
+};
+updateOnlineStatus();
 require("electron").ipcRenderer.on("hideThenShow", (event, message) => {
   $("#overlay" + message[1]).fadeIn(400, () => {
     $("#overlay" + message[0]).hide();

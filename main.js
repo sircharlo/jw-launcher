@@ -17,7 +17,7 @@ function createUpdateWindow() {
     },
     minWidth: 1024,
     minHeight: 768,
-    //  fullscreen: true,
+    fullscreen: true,
     //  alwaysOnTop: true,
     title: "JW Launcher"
   });
@@ -28,6 +28,8 @@ function createUpdateWindow() {
   win.setMenuBarVisibility(false);
   win.loadFile("index.html");
   win.maximize();
+  win.on("show", () => { win.focus(); });
+  win.show();
 }
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -42,12 +44,6 @@ if (!gotTheLock) {
   ipcMain.on("autoUpdate", () => {
     win.webContents.send("hideThenShow", ["InternetCheck", "UpdateCheck"]);
     autoUpdater.checkForUpdates();
-  });
-  ipcMain.on("noInternet", () => {
-    win.webContents.send("hideThenShow", ["InternetCheck", "InternetFail"]);
-    setInterval(() => {
-      win.webContents.send("checkInternet");
-    }, 10000);
   });
   autoUpdater.on("error", () => {
     win.webContents.send("goAhead");

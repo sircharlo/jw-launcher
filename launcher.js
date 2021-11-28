@@ -351,101 +351,25 @@ $(".actions").on("click", ".btn-zoom", function () {
 });
 $(".actions").on("click", ".btn-stream", async function () {
   toggleScreen("overlayPleaseWait");
-  let linkDetails = "https://fle.stream.jw.org/" + $(this).data("link-details").split(",")[0];
   try {
     $("#videos>div").hide();
     $(".streamingVideos").first().parent().show();
     $(".streamingVideos > div:not(:first)").remove();
-    var initialUrl = linkDetails;
-    var streamReq = await axios.head(linkDetails);
-    var cookies = {};
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    var tempHeaders = {
-      authority: "fle.stream.jw.org",
-      "content-length": "0",
-      "sec-ch-ua": "\"Google Chrome\";v=\"89\", \"Chromium\";v=\"89\", \";Not A Brand\";v=\"99\"",
-      "x-xsrf-token": cookies["XSRF-TOKEN"],
-      accept: "application/json, text/plain, */*",
-      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36",
-      "x-requested-with": "XMLHttpRequest",
-      origin: "https://fle.stream.jw.org",
-      referer: decodeURIComponent(linkDetails),
-      "accept-language": "en-CA,en;q=0.9,en-US;q=0.8,fr;q=0.7,ru;q=0.6",
-      cookie: "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS,
-      "sec-fetch-site": "same-origin",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-dest": "empty",
-      "sec-ch-ua-mobile": "?0",
-      dnt: "1"
-    };
-    streamReq = await axios.get("https://fle.stream.jw.org/language/getlanguages", {
-      headers: tempHeaders
-    });
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    var streamLangs = streamReq.data.languages;
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    delete tempHeaders["content-length"];
-    tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
-    tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
-    var tempContent = JSON.stringify({
-      token: decodeURIComponent(initialUrl).split("/").slice(-1)[0]
-    });
-    streamReq = await axios.post("https://fle.stream.jw.org/token/check", tempContent, {
-      headers: tempHeaders,
-    });
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    tempHeaders["content-length"] = "0";
-    tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
-    tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
-    streamReq = await axios.get("https://fle.stream.jw.org/member/getinfo", {
-      headers: tempHeaders
-    });
-    var streamLang = streamReq.data.data.language;
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    delete tempHeaders["content-length"];
-    tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
-    tempHeaders.referer = "https://fle.stream.jw.org/video/" + streamLang;
-    tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
-    tempContent = JSON.stringify({
-      language: streamLangs.filter(lang => lang.locale == streamLang)[0]
-    });
+    let tempHeaders = { "x-requested-with": "XMLHttpRequest" };
+    let streamLangs = (await axios.get("https://fle.stream.jw.org/language/getlanguages", { headers: tempHeaders })).data.languages;
+    tempHeaders.cookie = (await axios.post("https://fle.stream.jw.org/token/check", JSON.stringify({ token: decodeURIComponent($(this).data("link-details").split(",")[0]).split("/").slice(-1)[0] }), { headers: tempHeaders })).headers["set-cookie"].join("; ");
+    var streamLang = (await axios.get("https://fle.stream.jw.org/member/getinfo", { headers: tempHeaders })).data.data.language;
     var langSymbol = streamLangs.filter(lang => lang.locale == streamLang)[0].symbol;
-    streamReq = await axios.post("https://fle.stream.jw.org/event/languageVideos", tempContent, {
-      headers: tempHeaders
-    });
-    var streamFiles = streamReq.data;
-    for (let cookie of streamReq.headers["set-cookie"]) {
-      cookies[cookie.split("=")[0]] = cookie.split("=")[1].split(";")[0];
-    }
-    tempHeaders["x-xsrf-token"] = cookies["XSRF-TOKEN"];
-    tempHeaders.referer = "https://fle.stream.jw.org/video/";
-    tempHeaders.cookie = "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS;
-    //streamFiles = streamFiles.sort((a, b) => (a.data.origevent > b.data.origevent) ? 1 : -1);
-    var streamLabels = await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json");
-    $("#lblGoHome2").html(streamLabels.translations[langSymbol]["button_previous"]);
-    for (var streamFile of Object.entries(streamFiles)) {
-      var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, {
-        headers: {
-          Cookie: "sessionstream=" + cookies.sessionstream + "; XSRF-TOKEN=" + cookies["XSRF-TOKEN"] + "; AWSALB=" + cookies.AWSALB + "; AWSALBCORS=" + cookies.AWSALBCORS
-        }
-      });
+    $("#lblGoHome2").html((await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json")).translations[langSymbol]["button_previous"]);
+    for (var streamFile of Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data)) {
+      var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, { headers: { Cookie: tempHeaders.cookie } });
       $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='d-flex flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center d-flex flex-fill flex-row'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     toggleScreen("videos");
   } catch(err) {
     toggleScreen("overlaySettings", true);
-    console.error(linkDetails, err);
+    console.error($(this).data("link-details"), err);
   }
 });
 $("#btnRemoteAssistance").on("click", async function() {

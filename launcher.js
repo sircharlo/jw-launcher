@@ -140,6 +140,7 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find(".linkName").toggle(!!linkType);
   if (linkType === "zoom") {
     thisRow.find(".linkDetails").append("<input type='text' class='form-control form-control-sm zoomId' placeholder='Zoom meeting ID' /><input type='text' class='form-control form-control-sm zoomPassword' placeholder='Zoom meeting password' />");
+    thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"]);
   } else if (linkType === "stream") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
   }
@@ -216,6 +217,7 @@ async function prefsInitialize() {
   if (prefs.broadcastLang) $("#broadcastLang").val(prefs.broadcastLang).select2();
 }
 async function processSettings() {
+  $("#overlaySettings .is-invalid").removeClass("is-invalid");
   var configIsValid = true;
   for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
     $("#lbl" + label).html(prefs["label" + label]);
@@ -346,7 +348,7 @@ $(".streamingVideos").on("click", ".flex-column", function() {
 });
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
-  shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0] + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
+  shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0].replace(/\D+/g, "") + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
   $("#overlayPleaseWait").fadeIn().delay(10000).fadeOut();
 });
 $(".actions").on("click", ".btn-stream", async function () {
@@ -368,8 +370,10 @@ $(".actions").on("click", ".btn-stream", async function () {
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     toggleScreen("videos");
   } catch(err) {
+    let badLink = $(this).data("link-details");
+    $(".streamUrl").filter(function() { return $(this).val() ===  badLink; }).addClass("is-invalid");
     toggleScreen("overlaySettings", true);
-    console.error($(this).data("link-details"), err);
+    console.log(err);
   }
 });
 $("#btnRemoteAssistance").on("click", async function() {
@@ -386,7 +390,4 @@ $("#btnRemoteAssistance").on("click", async function() {
   fs.writeFileSync(path.join(appPath, qsFilename), new Buffer(qs));
   shell.openExternal(path.join(appPath, qsFilename));
   $(this).html(initialTriggerText).prop("disabled", false);
-});
-$(".links").on("keypress", ".zoomId", function(e){ // cmd/ctrl || arrow keys || delete key || numbers
-  return e.metaKey || e.which <= 0 || e.which === 8 || /[0-9]/.test(String.fromCharCode(e.which));
 });

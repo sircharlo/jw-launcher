@@ -29,6 +29,7 @@
 
     #overlaySettings {
       z-index: 50;
+      text-align: left;
       font-size: 0.9em
     }
 
@@ -46,12 +47,39 @@
       background-size: calc(.75em + .375rem) calc(.75em + .375rem)
     }
 
+    #overlaySettings input[type=text] {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    #overlaySettings table td {
+      vertical-align: middle;
+    }
+
+    #overlaySettings table td div {
+      display: flex;
+      align-items: center;
+    }
+
+    #overlaySettings table td div:not(.desc) {
+      justify-content: end;
+    }
+
     span.select2.is-invalid .select2-selection__arrow {
       right: 25px !important;
     }
 
+    #version,
+    #broadcast1button,
+    #btnGoHome,
+    #btnGoHome2,
+    .lblGoHome,
+    .lblGoHome2 {
+      display: flex;
+    }
+
     #version span.badge {
-      color: var(--bs-dark);
       font-weight: normal;
     }
 
@@ -123,6 +151,12 @@
       border-bottom-right-radius: 2.5vw;
       font-size: 3vw;
       z-index: 1000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .overlay {
+        background: var(--bs-gray-800);
+      }
     }
   </style>
   <meta name="color-scheme" content="light dark">
@@ -197,106 +231,169 @@
       </div>
     </div>
   </div>
-  <div id="overlaySettings" class="flex-column p-4 overlay" style="display: none;">
-    <div class="align-items-center d-flex justify-content-center pb-4">
-      <i id="settingsIcon" class="fas fa-fw fa-user-cog fa-3x text-dark"></i>
-    </div>
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <label for="username" class="col-3 m-0 text-start">Name of user</label>
-      <div class="col-9">
-        <input type="text" class="form-control" id="username" required />
-      </div>
-    </div>
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <label for="broadcastLang" class="col-3 m-0 text-start">Language for JW Broadcasting</label>
-      <select class="form-select" id="broadcastLang" style="width: 100%"></select>
-    </div>
-    <hr class="my-2" />
-    <table class="table links table-hover">
-      <thead>
-        <tr>
-          <th scope="col"><button type="button" class="btn btn-sm btn-success btn-add-link"><i class="fas fa-plus"></i></button></th>
-          <th scope="col" class="w-25">Type of meeting/link</th>
-          <th scope="col" class="w-25">Description</th>
-          <th scope="col">Connection details</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
-    <input class="syncedSettings" id="linkArray" type="hidden" />
-    <hr class="my-2" />
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <div class="input-group">
-        <span class="input-group-text">Shutdown</span>
-        <div class="input-group-text">
-          <div class="form-check form-switch">
-            <input type="checkbox" class="form-check-input" id="hideShutdown" />
-            <label for="hideShutdown" class="form-check-label">Hidden</label>
+  <div id="overlaySettings" class="flex-column p-2 overlay" style="display: none;">
+    <div class="flex-column flex-grow-1 w-100" style="display: flex; overflow-y: auto;">
+      <div class="accordion" id="settingsAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingUser">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUser" aria-expanded="true" aria-controls="collapseUser">
+              User preferences
+            </button>
+          </h2>
+          <div id="collapseUser" class="accordion-collapse collapse show" aria-labelledby="headingUser">
+            <div class="accordion-body">
+              <table class="table table-sm table-hover">
+                <tbody>
+                  <tr>
+                    <td class="w-25">
+                      <div class="desc">
+                        <label for="username">Name of user</label>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm" id="username" required />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="w-25">
+                      <div class="desc">
+                        <label for="broadcastLang">Language for JW Broadcasting</label>
+                      </div>
+                    </td>
+                    <td>
+                      <select class="form-select" id="broadcastLang" style="width: 100%">
+                        <option></option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr class="onOffToggle">
+                    <td class="w-25">
+                      <div class="desc">
+                        <label for="autoRunAtBoot">Autorun at startup</label>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="autoRunAtBoot" />
+                        <label class="form-check-label" for="enableSettings"></label>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <span class="input-group-text">Label:</span>
-        <input type="text" class="form-control" placeholder="Shutdown button label" id="labelShutdown" required />
-      </div>
-    </div>
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <div class="input-group">
-        <span class="input-group-text">Remote Assistance</span>
-        <div class="input-group-text">
-          <div class="form-check form-switch">
-            <input type="checkbox" class="form-check-input" id="hideRemoteAssistance" />
-            <label for="hideRemoteAssistance" class="form-check-label">Hidden</label>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingMediaLinks">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMediaLinks" aria-expanded="false" aria-controls="collapseMediaLinks">
+              Links to meetings and special events
+            </button>
+          </h2>
+          <div id="collapseMediaLinks" class="accordion-collapse collapse show" aria-labelledby="headingMediaLinks">
+            <div class="accordion-body">
+              <table class="table table-sm links table-hover">
+                <thead>
+                  <tr class="text-start">
+                    <th scope="col" class="w-25">Type of link</th>
+                    <th scope="col">Label</th>
+                    <th scope="col">Connection details</th>
+                    <th scope="col" class="text-end"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+              <input id="linkArray" type="hidden" />
+            </div>
           </div>
         </div>
-        <span class="input-group-text">Label:</span>
-        <input type="text" class="form-control" placeholder="Remote assistance button label" id="labelRemoteAssistance" required />
-      </div>
-    </div>
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <div class="input-group">
-        <span class="input-group-text">Settings</span>
-        <div class="input-group-text">
-          <div class="form-check form-switch">
-            <input type="checkbox" class="form-check-input" disabled id="hideSettings" />
-            <label for="hideSettings" class="form-check-label">Hidden</label>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingActions">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActions" aria-expanded="false" aria-controls="collapseActions">
+              Action buttons
+            </button>
+          </h2>
+          <div id="collapseActions" class="accordion-collapse collapse show" aria-labelledby="headingActions">
+            <div class="accordion-body">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr class="text-start">
+                    <th scope="col" class="w-25">Action</th>
+                    <th scope="col">Label</th>
+                    <th scope="col" class="text-end">Show</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="onOffToggle">
+                    <td>
+                      <div class="desc">Shutdown computer</div>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm" placeholder="Shutdown" id="labelShutdown" required />
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShutdown" />
+                        <label class="form-check-label" for="enableShutdown"></label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="onOffToggle">
+                    <td>
+                      <div class="desc">Initiate TeamViewer session</div>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm" placeholder="Remote assistance" id="labelRemoteAssistance" required />
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableRemoteAssistance" />
+                        <label class="form-check-label" for="enableRemoteAssistance"></label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="onOffToggle">
+                    <td>
+                      <div class="desc">Configure application settings</div>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm" placeholder="Settings" id="labelSettings" required />
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" checked disabled id="enableSettings" />
+                        <label class="form-check-label" for="enableSettings"></label>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <label for="labelSettings" class="input-group-text">Label:</label>
-        <input type="text" class="form-control" id="labelSettings" required />
       </div>
     </div>
-    <div class="d-flex flex-fill align-items-center syncedSettings">
-      <div class="input-group">
-        <div class="input-group-text">
-          <div class="form-check form-switch notLinux">
-            <input type="checkbox" class="form-check-input" id="autoRunAtBoot" />
-            <label class="form-check-label" for="autoRunAtBoot">Autorun at startup</label>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="d-flex flex-fill syncedSettings">
-    </div>
-    <div class="d-flex flex-fill syncedSettings">
-    </div>
-    <div class="d-flex flex-fill align-items-center">
-      <div class="flex-fill">
+    <div class="align-items-start" style="display: flex;">
+      <div class="col-4">
         <button type="button" class="btn btn-primary" id="btnExport">
           <i class="fas fa-fw fa-file-export"></i> Export settings file
         </button>
-        <button type="button" class="btn btn-dark btnSettings">
+      </div>
+      <div id="version" class="align-items-center justify-content-center pt-3 flex-fill col-4">
+        <span class="badge bg-secondary"></span>
+      </div>
+      <div class="col-4 text-end">
+        <button type="button" class="btn btn-secondary btnSettings">
           <i class="fas fa-fw fa-home"></i> Go back
         </button>
       </div>
-    </div>
-    <div id="version" class="align-items-center d-flex justify-content-center pt-3">
-      <span class="badge"></span>
     </div>
   </div>
   <div id="home" class="flex-column h-100 pb-2">
     <div class="actions align-items-center gx-2 justify-content-center px-2 row row-cols-3">
       <div class="broadcastContainer flex-grow-1 pt-2">
-        <button id="broadcast1button" style="display: none;" type="button" class="align-items-center btn btn-lg d-flex flex-column h-100 w-100">
+        <button id="broadcast1button" type="button" class="align-items-center btn btn-lg flex-column h-100 w-100">
         </button>
       </div>
     </div>
@@ -317,7 +414,7 @@
         </button>
       </div>
       <div class="flex-grow-1 h-100">
-        <button class="btn btn-dark col h-100 w-100" id="btnSettings">
+        <button class="btn btn-secondary col h-100 w-100" id="btnSettings">
           <i class="fas fa-fw fa-user-cog"></i> <span id="lblSettings"></span>
         </button>
       </div>
@@ -332,12 +429,12 @@
     <div class="align-items-center h-100 justify-content-center px-2" style="display: none;">
       <div class="featuredVideos g-2 h-100 justify-content-center row row-cols-5 pt-2">
         <div class="mt-0 pt-2">
-          <div class="d-flex h-100 rounded go-home p-2" id="btnGoHome">
-            <div class="d-flex flex-column flex-fill h-100 rounded lblGoHome">
+          <div class="h-100 rounded go-home p-2" id="btnGoHome">
+            <div class="flex-column flex-fill h-100 rounded lblGoHome">
               <div class="flex-row">
                 <h5><kbd>A</kbd></h5>
               </div>
-              <div class="align-items-center d-flex flex-fill flex-row">
+              <div class="align-items-center flex-fill flex-row" style="display: flex;">
                 <h5 id="lblGoHome">
                 </h5>
               </div>
@@ -349,12 +446,12 @@
     <div class="align-items-center h-100 justify-content-center px-2" style="display: none;">
       <div class="streamingVideos g-2 h-100 justify-content-center row row-cols-4 pt-2">
         <div class="mt-0 pt-2">
-          <div class="d-flex h-100 rounded go-home p-2" id="btnGoHome2">
-            <div class="d-flex flex-column flex-fill h-100 rounded lblGoHome2">
+          <div class="h-100 rounded go-home p-2" id="btnGoHome2">
+            <div class="flex-column flex-fill h-100 rounded lblGoHome2">
               <div class="flex-row">
                 <h5><kbd>A</kbd></h5>
               </div>
-              <div class="align-items-center d-flex flex-fill flex-row">
+              <div class="align-items-center flex-fill flex-row" style="display: flex;">
                 <h5 id="lblGoHome2">
                 </h5>
               </div>

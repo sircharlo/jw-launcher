@@ -51,6 +51,17 @@ require("electron").ipcRenderer.on("goAhead", () => {
     goAhead();
   });
 });
+$(".links tbody").on("change", "input, select", function() {
+  $(".links tbody input:visible" + ($(".links tbody .linkType").length === 1 ? ", .links tbody select:visible" : "")).removeClass("is-invalid").filter(function() {
+    return !this.value;
+  }).addClass("is-invalid");
+  $(this).closest("tr").find(".btn-delete-link").toggle($(this).closest("tr").find(".linkType").val() !== "");
+  if (!$(this).hasClass("linkType") && $(".links tbody input:visible, .links tbody select:visible").filter(function() {
+    return !this.value;
+  }).length === 0 && $(".links tbody .is-invalid").length === 0 && $(".links tbody .linkType").filter(function() {
+    return !this.value;
+  }).length === 0) addNewLink();
+});
 function goAhead() {
   if (fs.existsSync(prefsFile)) {
     try {
@@ -64,9 +75,6 @@ function goAhead() {
   processSettings();
   $("#version span.badge").html("v" + remote.app.getVersion());
   $("#overlayPleaseWait").fadeOut();
-  if (os.platform() == "linux") {
-    $(".notLinux").removeClass("d-flex").fadeOut();
-  }
   window.addEventListener("keyup", handleKeyPress, true);
 }
 function handleKeyPress (event) {
@@ -107,46 +115,74 @@ function isReachable(hostname, port) {
     }
   });
 }
-$(".btn-add-link").on("click", function() {
-  addNewLink();
-  $(".links tbody tr").last().find(".linkType").change();
-});
 $(".links").on("click", ".btn-delete-link", function() {
   $(this).closest("tr").remove();
-  if ($(".links tbody tr").length == 0) addNewLink();
   $(".links tbody tr").last().find(".linkName").change();
 });
 $(".links tbody").on("change", ".streamUrl", function() {
   $(this).val($(this).val().replace("https://fle.stream.jw.org/", ""));
 });
 $(".links tbody").on("change", ".linkName, .linkDetails input", function() {
-  $(".btn-add-link").prop("disabled", !($(".linkType").filter(function() {
-    return $(this).val().length === 0;
-  }).length === 0 && $(".linkName:visible, .linkDetails:visible input").filter(function() {
-    return !this.value;
-  }).length === 0));
   let linkArray = [];
   $(".links tbody tr").each(function () {
     if ($(this).find(".linkType").val().length > 0) {
       linkArray.push($(this).find(".linkType, .linkName, .linkDetails input").map(function () { return $(this).val(); }).get());
     }
   });
-  $("#linkArray").val(JSON.stringify(linkArray)).change();
+  if ($(".links tbody tr .is-invalid:visible").length ===0) $("#linkArray").val(JSON.stringify(linkArray)).change();
 });
 $(".links tbody").on("change", ".linkType", function() {
   let linkType = $(this).val();
   let thisRow = $(this).closest("tr");
   thisRow.find(".linkDetails").empty();
-  thisRow.find(".linkName").toggle(!!linkType);
+  thisRow.find(".linkName").val("").toggle(!!linkType);
   if (linkType === "zoom") {
-    thisRow.find(".linkDetails").append("<input type='text' class='form-control form-control-sm zoomId' placeholder='Zoom meeting ID' /><input type='text' class='form-control form-control-sm zoomPassword' placeholder='Zoom meeting password' />");
+    thisRow.find(".linkDetails").append("<input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' />");
     thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"]);
   } else if (linkType === "stream") {
-    thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
+    thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
   }
+  thisRow.find("input").addClass("is-invalid");
+  validateSettings();
 });
 function addNewLink() {
-  $(".links tbody").append("<tr><td><button type='button' class='btn btn-danger btn-sm btn-delete-link'><i class='fas fa-minus'></i></button></td><td><select class='form-select form-select-sm linkType'><option value=''>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td></tr>");
+  $(".links tbody").append("<tr><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
+}
+async function broadcastLoad() {
+  var videos = 0;
+  if (prefs.broadcastLang) {
+    let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
+    broadcastStrings = req.translations[prefs.broadcastLang];
+    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").length + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + broadcastStrings.ttlHome + "</div>");
+    $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
+    try {
+      $(".featuredVideos > div:not(:first)").remove();
+      var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
+      var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
+      let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
+      allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
+      for (var featuredVideo of allVideos) {
+        videos++;
+        var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "' style='display: flex;'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-column flex-fill m-2' style='display: flex;'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
+          $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
+          $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
+        });
+        $(".featuredVideos").append(featuredVideoElement);
+      }
+      $(".featuredVideos > div").css("height", 100 / Math.ceil($(".featuredVideos > div").length / 5) + "%");
+    } catch(err) {
+      console.error("[ERROR] https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www");
+    }
+    $("#broadcast1button").parent().toggle(videos > 0);
+  }
+  return videos;
+}
+function buttonHeight(broadcastVideos) {
+  let links = $(".links tbody tr").filter(function() {
+      return $(this).find(".linkName").val() !== "";
+    }).length,
+    broadcast = (broadcastVideos > 0 ? 1 : 0);
+  $(".actions > div").css("height", 100 / Math.ceil((broadcast + links) / 3) + "%");
 }
 async function downloadFile(url, triggerElem) {
   try {
@@ -165,11 +201,12 @@ async function downloadFile(url, triggerElem) {
 }
 function generateButtons() {
   $(".actions .buttonContainer").remove();
-  let links = $(".links tbody tr");
+  let links = $(".links tbody tr").filter(function() {
+    return $(this).find(".linkName").val() !== "";
+  });
   for (let link = 0; link <links.length; link++) {
-    $(".actions").append("<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" + $(links[link]).find(".linkType").val() + " d-flex flex-column h-100 w-100' style='background-color: " + colors[(link % colors.length)] + "' data-link-details='" + $(links[link]).find(".linkDetails input").map(function () { return $(this).val(); }).get() + "'><div><kbd>" + String.fromCharCode(link + 65) + "</kbd></div><div class='align-items-center d-flex flex-fill'>" + $(links[link]).find(".linkName").val() + "</div></button></div>");
+    $(".actions").append("<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" + $(links[link]).find(".linkType").val() + " flex-column h-100 w-100' style='display: flex; background-color: " + colors[(link % colors.length)] + "' data-link-details='" + $(links[link]).find(".linkDetails input").map(function () { return $(this).val(); }).get() + "'><div><kbd>" + String.fromCharCode(link + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + $(links[link]).find(".linkName").val() + "</div></button></div>");
   }
-  $(".actions > .buttonContainer, .actions > .broadcastContainer").css("height", 100 / Math.ceil($(".actions > .buttonContainer, .actions > .broadcastContainer").length / 3) + "%");
   $(".actions").append($(".actions > .broadcastContainer"));
 }
 async function getJson(url) {
@@ -179,96 +216,59 @@ async function getJson(url) {
     payload = await axios.get(url);
     response = payload.data;
   } catch (err) {
-    console.error(err, payload);
+    console.error(url, err, payload);
   }
   return response;
 }
 async function prefsInitialize() {
-  for (var pref of ["linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "hideShutdown", "hideRemoteAssistance", "username"]) {
+  for (var pref of ["linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "enableShutdown", "enableRemoteAssistance", "username"]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
       prefs[pref] = null;
     }
     if ($("#" + pref)[0].type == "text" || $("#" + pref)[0].type == "select-one" || $("#" + pref)[0].type == "range" || $("#" + pref)[0].type == "hidden") {
       $("#" + pref).val(prefs[pref]);
-      if (pref == "linkArray") {
-        if (prefs[pref]) {
-          for (let link of JSON.parse(prefs[pref])) {
-            addNewLink();
-            $(".links tbody tr").last().find(".linkType").val(link[0]).change();
-            link.shift();
-            for (let linkPart = 0; linkPart < link.length; linkPart++) {
-              $(".links tbody tr").last().find("input").eq(linkPart).val(link[linkPart]);
-            }
-          }
-        } else {
-          addNewLink();
-        }
-      }
     } else if ($("#" + pref)[0].type == "checkbox") {
       $("#" + pref).prop("checked", prefs[pref]);
     }
   }
-  for (var lang of (await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www")).languages) {
+  let availMedia = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured")).category.media.concat((await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos")).category.media).map(item => item.availableLanguages);
+  let availLangs = [...new Set([].concat(...availMedia))];
+  for (var lang of Object.values((await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www")).languages).filter(value => availLangs.includes(value.code))) {
     $("#broadcastLang").append($("<option>", {
       value: lang.code,
       text: lang.vernacular + " (" + lang.name + ")"
     }));
   }
-  if (prefs.broadcastLang) $("#broadcastLang").val(prefs.broadcastLang).select2();
+  $("#broadcastLang").val(prefs.broadcastLang ? prefs.broadcastLang : "").select2();
+  if (prefs.linkArray && JSON.parse(prefs.linkArray).length > 0) {
+    for (let link of JSON.parse(prefs.linkArray)) {
+      addNewLink();
+      $(".links tbody tr").last().find(".linkType").val(link[0]).change();
+      link.shift();
+      for (let linkPart = 0; linkPart < link.length; linkPart++) {
+        $(".links tbody tr").last().find("input").eq(linkPart).val(link[linkPart]).removeClass("is-invalid");
+      }
+    }
+    $(".links tbody tr").last().find(".linkName").change();
+  }
 }
-async function processSettings() {
-  $("#overlaySettings .is-invalid").removeClass("is-invalid");
-  var configIsValid = true;
+function processSettings() {
   for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
     $("#lbl" + label).html(prefs["label" + label]);
   }
-  for (var hideMe of ["Shutdown", "RemoteAssistance"]) {
-    if (prefs["hide" + hideMe]) {
-      $("#btn" + hideMe).parent().fadeOut();
-    } else {
-      $("#btn" + hideMe).parent().fadeIn();
-    }
+  for (var enableMe of ["Shutdown", "RemoteAssistance"]) {
+    $("#btn" + enableMe).parent().toggle(prefs["enable" + enableMe]);
   }
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
-  if (prefs.broadcastLang) {
-    let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
-    broadcastStrings = req.translations[prefs.broadcastLang];
-    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").length + 65) + "</kbd></div><div class='align-items-center d-flex flex-fill'>" + broadcastStrings.ttlHome + "</div>");
-    $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
-    var videos = 0;
-    try {
-      $(".featuredVideos > div:not(:first)").remove();
-      var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
-      var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
-      let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
-      allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
-      for (var featuredVideo of allVideos) {
-        videos++;
-        var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light d-flex flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='d-flex flex-column flex-fill m-2'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center d-flex flex-fill flex-row'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
-          $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
-          $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
-        });
-        $(".featuredVideos").append(featuredVideoElement);
-      }
-      $(".featuredVideos > div").css("height", 100 / Math.ceil($(".featuredVideos > div").length / 5) + "%");
-    } catch(err) {
-      console.error(err);
+  broadcastLoad().then(function(broadcastVideos) {
+    for (var setting of ["broadcastLang", "username"]) {
+      $("#" + setting).toggleClass("is-invalid", !prefs[setting]).next("span.select2").toggleClass("is-invalid", !prefs[setting]);
     }
-    $("#broadcast1button").toggle(videos > 0);
-  }
-  for (var setting of ["broadcastLang", "username"]) {
-    if (!prefs[setting]) {
-      configIsValid = false;
-    }
-    $("#" + setting).toggleClass("is-invalid", !prefs[setting]).next("span.select2").toggleClass("is-invalid", !prefs[setting]);
-  }
-  $(".btnSettings").prop("disabled", !configIsValid).toggleClass("btn-danger", !configIsValid).toggleClass("btn-primary", configIsValid);
-  $("#settingsIcon").toggleClass("text-danger", !configIsValid).toggleClass("text-muted", configIsValid);
-  if (configIsValid) generateButtons();
-  if (!configIsValid) toggleScreen("overlaySettings", true);
-  return configIsValid;
+    validateSettings();
+    buttonHeight(broadcastVideos);
+  });
 }
 function toggleScreen(screen, forceShow, forceHide) {
   var visible = $("#" + screen).is(":visible");
@@ -297,10 +297,18 @@ function updateCleanup() {
     console.error(err);
   }
 }
+function validateSettings() {
+  let configIsValid = $("#overlaySettings .is-invalid:visible").length === 0;
+  $(".btnSettings").prop("disabled", !configIsValid).toggleClass("btn-danger", !configIsValid).toggleClass("btn-secondary", configIsValid);
+  $("#settingsIcon").toggleClass("text-danger", !configIsValid).toggleClass("text-muted", configIsValid);
+  if (configIsValid) generateButtons();
+  if (!configIsValid) toggleScreen("overlaySettings", true);
+  return configIsValid;
+}
 $(".btnSettings, #btnSettings").on("click", function() {
   toggleScreen("overlaySettings");
 });
-$(".syncedSettings input, .syncedSettings select, input.syncedSettings").on("change", function() {
+$("#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)").on("change", function() {
   if ($(this).prop("tagName") == "INPUT") {
     if ($(this).prop("type") == "checkbox") {
       prefs[$(this).prop("id")] = $(this).prop("checked");
@@ -365,7 +373,7 @@ $(".actions").on("click", ".btn-stream", async function () {
     $("#lblGoHome2").html((await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json")).translations[langSymbol]["button_previous"]);
     for (var streamFile of Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data)) {
       var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, { headers: { Cookie: tempHeaders.cookie } });
-      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='d-flex flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center d-flex flex-fill flex-row'><h5>" + streamFile[1].description + "</h5></div></div>");
+      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     toggleScreen("videos");
@@ -373,7 +381,7 @@ $(".actions").on("click", ".btn-stream", async function () {
     let badLink = $(this).data("link-details");
     $(".streamUrl").filter(function() { return $(this).val() ===  badLink; }).addClass("is-invalid");
     toggleScreen("overlaySettings", true);
-    console.log(err);
+    console.error(err);
   }
 });
 $("#btnRemoteAssistance").on("click", async function() {
@@ -390,4 +398,13 @@ $("#btnRemoteAssistance").on("click", async function() {
   fs.writeFileSync(path.join(appPath, qsFilename), new Buffer(qs));
   shell.openExternal(path.join(appPath, qsFilename));
   $(this).html(initialTriggerText).prop("disabled", false);
+});
+$("#overlaySettings tr.onOffToggle").on("click", function() {
+  $(this).find("input.optional-action-enabled").click();
+});
+$("#overlaySettings tr.onOffToggle input.optional-action-enabled").click(function(e) {
+  e.stopPropagation();
+});
+$(document).on("select2:open", () => {
+  document.querySelector(".select2-search__field").focus();
 });

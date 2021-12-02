@@ -16,6 +16,7 @@
 
     .overlay {
       background: var(--bs-light);
+      color: var(--bs-dark);
       position: fixed;
       height: 100%;
       width: 100%;
@@ -156,6 +157,23 @@
     @media (prefers-color-scheme: dark) {
       .overlay {
         background: var(--bs-gray-800);
+        color: var(--bs-light);
+      }
+
+      .select2-dropdown,
+      #select2-broadcastLang-container {
+        color: var(--bs-light) !important;
+        background: var(--bs-dark) !important;
+        border-radius: .2rem;
+      }
+
+      .select2-container--default .select2-results__option--selected {
+        background: var(--bs-secondary) !important;
+      }
+
+      .select2-container--default .select2-selection--single {
+        border-color: var(--bs-secondary) !important;
+        background-color: var(--bs-dark) !important;
       }
     }
   </style>
@@ -173,27 +191,27 @@
 <body>
   <div id="overlayInternetCheck" class="overlay justify-content-center">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-wifi"></i>
       </div>
-      <div class="align-self-center text-dark fa-2x" role="status">
+      <div class="align-self-center fa-2x" role="status">
         <i class="fas fa-circle-notch fa-spin"></i>
       </div>
     </div>
   </div>
   <div id="overlayPleaseWait" class="overlay justify-content-center" style="display: none;">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-tasks"></i>
       </div>
-      <div class="align-self-center text-dark fa-2x" role="status">
+      <div class="align-self-center fa-2x" role="status">
         <i class="fas fa-circle-notch fa-spin"></i>
       </div>
     </div>
   </div>
   <div id="overlayInternetFail" class="overlay justify-content-center" style="display: none;">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-wifi"></i>
       </div>
       <div class="align-self-center text-danger fa-2x" role="status">
@@ -203,7 +221,7 @@
   </div>
   <div id="overlayUpdateCheck" class="overlay justify-content-center" style="display: none;">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-wifi"></i>
       </div>
       <div class="align-self-center text-success fa-2x" role="status">
@@ -213,7 +231,7 @@
   </div>
   <div id="overlayUpdateAvailable" class="overlay justify-content-center" style="display: none;">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-cloud-download-alt"></i>
       </div>
       <div class="align-self-center text-warning fa-2x" role="status">
@@ -223,7 +241,7 @@
   </div>
   <div id="overlayUpdateDownloaded" class="overlay justify-content-center" style="display: none;">
     <div class="align-self-center">
-      <div class="align-self-center text-dark fa-5x" role="status">
+      <div class="align-self-center fa-5x" role="status">
         <i class="fas fa-fw fa-cloud-download-alt"></i>
       </div>
       <div class="align-self-center text-success fa-2x" role="status">
@@ -247,7 +265,7 @@
                   <tr>
                     <td class="w-25">
                       <div class="desc">
-                        <label for="username">Name of user</label>
+                        <label for="username">Zoom display name</label>
                       </div>
                     </td>
                     <td>
@@ -295,7 +313,7 @@
               <table class="table table-sm links table-hover">
                 <thead>
                   <tr class="text-start">
-                    <th scope="col" class="w-25">Type of link</th>
+                    <th scope="col" class="w-25">Link type</th>
                     <th scope="col">Label</th>
                     <th scope="col">Connection details</th>
                     <th scope="col" class="text-end"></th>

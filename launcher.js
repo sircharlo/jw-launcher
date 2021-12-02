@@ -63,24 +63,31 @@ $(".links tbody").on("change", "input, select", function() {
   }).length === 0) addNewLink();
 });
 function goAhead() {
-  if (fs.existsSync(prefsFile)) {
-    try {
-      prefs = JSON.parse(fs.readFileSync(prefsFile));
-      updateCleanup();
-    } catch (err) {
-      console.error(err);
+  languageRefresh().then(function() {
+    if (fs.existsSync(prefsFile)) {
+      try {
+        prefs = JSON.parse(fs.readFileSync(prefsFile));
+        updateCleanup();
+      } catch (err) {
+        console.error(err, prefs);
+        toggleScreen("overlaySettings", true);
+      }
+    } else {
+      addNewLink(true);
     }
     prefsInitialize();
-  }
-  processSettings();
-  $("#version span.badge").html("v" + remote.app.getVersion());
-  $("#overlayPleaseWait").fadeOut();
-  window.addEventListener("keyup", handleKeyPress, true);
+    processSettings();
+    $("#version span.badge").html("v" + remote.app.getVersion());
+    $("#overlayPleaseWait").fadeOut();
+    window.addEventListener("keyup", handleKeyPress, true);
+  });
 }
 function handleKeyPress (event) {
   if (event.code.includes("Key") && !$("#overlayPleaseWait").is(":visible") && !(event.ctrlKey || event.metaKey || event.shiftKey)) {
     if ($("#home").is(":visible")) {
-      if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").length + 65).toLowerCase()) {
+      if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").filter(function() {
+        return $(this).find(".linkName").val() !== "";
+      }).length + 65).toLowerCase()) {
         $("#broadcast1button").click();
       } else {
         $(".actions .buttonContainer button").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
@@ -143,24 +150,41 @@ $(".links tbody").on("change", ".linkType", function() {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
   }
   thisRow.find("input").addClass("is-invalid");
-  validateSettings();
+  if (!$(this).hasClass("initializing")) validateSettings();
 });
-function addNewLink() {
-  $(".links tbody").append("<tr><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
+async function languageRefresh() {
+  let availMedia = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured")).category.media.concat((await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos")).category.media).map(item => item.availableLanguages);
+  let availLangs = [...new Set([].concat(...availMedia))];
+  for (var lang of Object.values((await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www")).languages).filter(value => availLangs.includes(value.code))) {
+    $("#broadcastLang").append($("<option>", {
+      value: lang.code,
+      text: lang.vernacular + " (" + lang.name + ")"
+    }));
+  }
+  $("#broadcastLang").select2();
+}
+function addNewLink(isFirstRow) {
+  $(".links tbody").append("<tr><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-fielàd' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
+  if (isFirstRow) $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
 }
 async function broadcastLoad() {
   var videos = 0;
   if (prefs.broadcastLang) {
     let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
     broadcastStrings = req.translations[prefs.broadcastLang];
-    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").length + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + broadcastStrings.ttlHome + "</div>");
+    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").filter(function() {
+      return $(this).find(".linkName").val() !== "";
+    }).length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").filter(function() {
+      return $(this).find(".linkName").val() !== "";
+    }).length + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + broadcastStrings.ttlHome + "</div>");
     $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
     try {
-      $(".featuredVideos > div:not(:first)").remove();
       var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
       var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
       let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
       allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
+      console.log(allVideos);
+      $(".featuredVideos > div:not(:first)").remove();
       for (var featuredVideo of allVideos) {
         videos++;
         var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "' style='display: flex;'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-column flex-fill m-2' style='display: flex;'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
@@ -220,7 +244,7 @@ async function getJson(url) {
   }
   return response;
 }
-async function prefsInitialize() {
+function prefsInitialize() {
   for (var pref of ["linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "enableShutdown", "enableRemoteAssistance", "username"]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
       prefs[pref] = null;
@@ -231,33 +255,28 @@ async function prefsInitialize() {
       $("#" + pref).prop("checked", prefs[pref]);
     }
   }
-  let availMedia = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured")).category.media.concat((await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos")).category.media).map(item => item.availableLanguages);
-  let availLangs = [...new Set([].concat(...availMedia))];
-  for (var lang of Object.values((await getJson("https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www")).languages).filter(value => availLangs.includes(value.code))) {
-    $("#broadcastLang").append($("<option>", {
-      value: lang.code,
-      text: lang.vernacular + " (" + lang.name + ")"
-    }));
-  }
   $("#broadcastLang").val(prefs.broadcastLang ? prefs.broadcastLang : "").select2();
   if (prefs.linkArray && JSON.parse(prefs.linkArray).length > 0) {
     for (let link of JSON.parse(prefs.linkArray)) {
       addNewLink();
-      $(".links tbody tr").last().find(".linkType").val(link[0]).change();
+      $(".links tbody tr").last().find(".linkType").addClass("initializing").val(link[0]).change().removeClass("initializing");
       link.shift();
       for (let linkPart = 0; linkPart < link.length; linkPart++) {
         $(".links tbody tr").last().find("input").eq(linkPart).val(link[linkPart]).removeClass("is-invalid");
       }
     }
     $(".links tbody tr").last().find(".linkName").change();
+  } else {
+    addNewLink(true);
   }
+  processSettings();
 }
 function processSettings() {
   for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
     $("#lbl" + label).html(prefs["label" + label]);
   }
   for (var enableMe of ["Shutdown", "RemoteAssistance"]) {
-    $("#btn" + enableMe).parent().toggle(prefs["enable" + enableMe]);
+    $("#btn" + enableMe).parent().toggle(!!prefs["enable" + enableMe]);
   }
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
@@ -285,20 +304,19 @@ function toggleScreen(screen, forceShow, forceHide) {
 }
 function updateCleanup() {
   try {
-    let localPrefsFile = path.join(appPath, "local-prefs.json");
-    if (fs.existsSync(localPrefsFile)) {
-      let localPrefs = JSON.parse(fs.readFileSync(localPrefsFile));
-      prefs.username = localPrefs.username;
-      fs.rmSync(localPrefsFile);
+    for (var oldHidePref of ["Shutdown", "RemoteAssistance"]) {
+      if ("hide" + oldHidePref in prefs) {
+        prefs["enable" + oldHidePref] = !prefs["hide" + oldHidePref];
+        delete prefs["hide" + oldHidePref];
+      }
     }
-    if ("targetVolume" in prefs) delete prefs.targetVolume;
     fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
   } catch (err) {
     console.error(err);
   }
 }
 function validateSettings() {
-  let configIsValid = $("#overlaySettings .is-invalid:visible").length === 0;
+  let configIsValid = $("#overlaySettings .is-invalid").length === 0;
   $(".btnSettings").prop("disabled", !configIsValid).toggleClass("btn-danger", !configIsValid).toggleClass("btn-secondary", configIsValid);
   $("#settingsIcon").toggleClass("text-danger", !configIsValid).toggleClass("text-muted", configIsValid);
   if (configIsValid) generateButtons();
@@ -351,7 +369,7 @@ $("#broadcast1button").on("click", function() {
 $("#btnGoHome, #btnGoHome2").on("click", function() {
   toggleScreen("videos");
 });
-$(".streamingVideos").on("click", ".flex-column", function() {
+$(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", function() {
   $("#videoPlayer").append("<video controls autoplay><source src='" + $(this).data("url") + "' / ></video>").fadeIn();
 });
 $(".actions").on("click", ".btn-zoom", function () {

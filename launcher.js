@@ -11,7 +11,8 @@ const appPath = remote.app.getPath("userData"),
   //          green      pink       blue     deeporange   purple     yellow      cyen      brown
   colors = ["#00e676", "#ff80ab", "#64b5f6", "#ffb74d", "#ea80fc", "#ffff8d", "#18ffff", "#bcaaa4"],
   prefsFile = path.join(appPath, "prefs.json");
-var broadcastStrings = {},
+var scheduledActionInfo = {},
+  broadcastStrings = {},
   prefs = {};
 axios.defaults.adapter = require("axios/lib/adapters/http");
 function checkInternet(online) {
@@ -52,15 +53,11 @@ require("electron").ipcRenderer.on("goAhead", () => {
   });
 });
 $(".links tbody").on("change", "input, select", function() {
-  $(".links tbody input:visible" + ($(".links tbody .linkType").length === 1 ? ", .links tbody select:visible" : "")).removeClass("is-invalid").filter(function() {
+  $(".links tbody input:visible, .links tbody select:visible").removeClass("is-invalid").filter(function() {
     return !this.value;
   }).addClass("is-invalid");
   $(this).closest("tr").find(".btn-delete-link").toggle($(this).closest("tr").find(".linkType").val() !== "");
-  if (!$(this).hasClass("linkType") && $(".links tbody input:visible, .links tbody select:visible").filter(function() {
-    return !this.value;
-  }).length === 0 && $(".links tbody .is-invalid").length === 0 && $(".links tbody .linkType").filter(function() {
-    return !this.value;
-  }).length === 0) addNewLink();
+  updateScheduleTargets();
 });
 function goAhead() {
   languageRefresh().then(function() {
@@ -72,14 +69,13 @@ function goAhead() {
         console.error(err, prefs);
         toggleScreen("overlaySettings", true);
       }
-    } else {
-      addNewLink(true);
     }
     prefsInitialize();
     processSettings();
     $("#version span.badge").html("v" + remote.app.getVersion());
     $("#overlayPleaseWait").fadeOut();
     window.addEventListener("keyup", handleKeyPress, true);
+    scheduleLoader();
   });
 }
 function handleKeyPress (event) {
@@ -122,9 +118,10 @@ function isReachable(hostname, port) {
     }
   });
 }
-$(".links").on("click", ".btn-delete-link", function() {
+$("#overlaySettings tbody").on("click", ".btn-delete", function() {
+  let parentTable = $(this).closest("tbody");
   $(this).closest("tr").remove();
-  $(".links tbody tr").last().find(".linkName").change();
+  parentTable.find("tr").last().find("input").first().change();
 });
 $(".links tbody").on("change", ".streamUrl", function() {
   $(this).val($(this).val().replace("https://fle.stream.jw.org/", ""));
@@ -152,6 +149,16 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find("input").addClass("is-invalid");
   if (!$(this).hasClass("initializing")) validateSettings();
 });
+$(".schedule tbody").on("change", "input, select", function() {
+  $(".schedule tbody input, .schedule tbody select").removeClass("is-invalid").filter(function() {
+    return !this.value;
+  }).addClass("is-invalid");
+  let scheduleArray = [];
+  $(".schedule tbody tr").each(function () {
+    scheduleArray.push($(this).find("input, select").map(function () { return $(this).val(); }).get());
+  });
+  if ($(".schedule tbody tr .is-invalid:visible").length ===0) $("#scheduleArray").val(JSON.stringify(scheduleArray)).change();
+});
 async function languageRefresh() {
   let availMedia = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured")).category.media.concat((await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos")).category.media).map(item => item.availableLanguages);
   let availLangs = [...new Set([].concat(...availMedia))];
@@ -163,9 +170,30 @@ async function languageRefresh() {
   }
   $("#broadcastLang").select2();
 }
-function addNewLink(isFirstRow) {
-  $(".links tbody").append("<tr><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-fielàd' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
-  if (isFirstRow) $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
+function addNewLink() {
+  $(".links tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
+  $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
+}
+function addNewSchedule() {
+  $(".schedule tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>");
+  $(".schedule tbody tr").last().find(".triggerTime").inputmask("99:99");
+  updateScheduleTargets();
+}
+function updateScheduleTargets() {
+  $(".schedule select.targetAction").each(function() {
+    let sel = $(this);
+    let links = $(".links tbody tr").filter(function() {
+      return $(this).find(".linkName").val() !== "";
+    });
+    sel.find("option").slice(links.length + 1).remove();
+    sel.change();
+    links.each(function(index) {
+      if (sel.find("option[value=" + index + "]").length === 0) sel.append($("<option>", {
+        value: index
+      }));
+      sel.find("option[value=" + index + "]").text($(this).find(".linkName").val() + " - " + $(this).find(".linkType option:selected").text());
+    });
+  });
 }
 async function broadcastLoad() {
   var videos = 0;
@@ -183,7 +211,6 @@ async function broadcastLoad() {
       var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
       let allVideos = studioFeatured.concat(latestVideos.filter(item => !studioFeatured.includes(item))).slice(0, 16);
       allVideos = [...new Map(allVideos.map(item => [item["guid"], item])).values()];
-      console.log(allVideos);
       $(".featuredVideos > div:not(:first)").remove();
       for (var featuredVideo of allVideos) {
         videos++;
@@ -245,7 +272,7 @@ async function getJson(url) {
   return response;
 }
 function prefsInitialize() {
-  for (var pref of ["linkArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "enableShutdown", "enableRemoteAssistance", "username"]) {
+  for (var pref of ["linkArray", "scheduleArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "enableShutdown", "enableRemoteAssistance", "username"]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
       prefs[pref] = null;
     }
@@ -259,15 +286,22 @@ function prefsInitialize() {
   if (prefs.linkArray && JSON.parse(prefs.linkArray).length > 0) {
     for (let link of JSON.parse(prefs.linkArray)) {
       addNewLink();
-      $(".links tbody tr").last().find(".linkType").addClass("initializing").val(link[0]).change().removeClass("initializing");
+      $(".links tbody tr").last().find(".linkType").addClass("initializing").val(link[0]).change().removeClass("initializing is-invalid");
       link.shift();
       for (let linkPart = 0; linkPart < link.length; linkPart++) {
         $(".links tbody tr").last().find("input").eq(linkPart).val(link[linkPart]).removeClass("is-invalid");
       }
     }
     $(".links tbody tr").last().find(".linkName").change();
-  } else {
-    addNewLink(true);
+  }
+  if (prefs.scheduleArray && JSON.parse(prefs.scheduleArray).length > 0) {
+    for (let schedule of JSON.parse(prefs.scheduleArray)) {
+      addNewSchedule();
+      for (let schedulePart = 0; schedulePart < schedule.length; schedulePart++) {
+        $(".schedule tbody tr").last().find("input, select").eq(schedulePart).val(schedule[schedulePart]).removeClass("is-invalid");
+      }
+    }
+    $(".schedule tbody tr").last().find("input").first().change();
   }
   processSettings();
 }
@@ -288,6 +322,47 @@ function processSettings() {
     validateSettings();
     buttonHeight(broadcastVideos);
   });
+}
+function scheduleLoader() {
+  let d = new Date();
+  let schedules = [];
+  $(".schedule tbody tr").filter(function() {
+    return $(this).find(".is-invalid").length === 0;
+  }).each(function () {
+    let scheduledItem = {};
+    $(this).find("select, input").each(function () {
+      scheduledItem[Array.from($(this).prop("classList")).filter(str => new RegExp("trigger|target", "g").test(str)).join("")] = $(this).val();
+    });
+    schedules.push(scheduledItem);
+  });
+  if (schedules.length > 0 && (!scheduledActionInfo.lastExecution || (d - scheduledActionInfo.lastExecution) / 1000 / 60 / 60 > 12) && (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12)) {
+    if ($("#home:visible").length > 0) {
+      for (var schedule of schedules) {
+        if (d.getDay() == schedule.triggerDay) {
+          let triggerTime = schedule.triggerTime.split(":");
+          let targetDate = new Date(d);
+          targetDate.setHours(triggerTime[0], triggerTime[1], 0, 0);
+          let timeToEvent = (targetDate - d) / 1000 / 60;
+          if (timeToEvent >=-105 && timeToEvent <= 30) {
+            console.log("[SCHEDULE] Triggering scheduled item, as we are within the acceptable timeframe");
+            $("#actionDesc").text($(".schedule tbody tr .targetAction").eq(schedule.targetAction).find("option:selected").text());
+            $("#overlayScheduledAction").stop().fadeIn().delay(10000).fadeOut(400, function() {
+              if (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12) {
+                $(".actions button").eq(schedule.targetAction).click();
+              }
+            });
+            let timeLeft = 10;
+            let downloadTimer = setInterval(function(){
+              if(timeLeft <= 0) clearInterval(downloadTimer);
+              $("#scheduledDelayProgress .progress-bar").css("width", (10 - timeLeft + 1) * 10 + "%");
+              timeLeft -= 1;
+            }, 1000);
+          }
+        }
+      }
+    }
+  }
+  setTimeout(scheduleLoader, 15000);
 }
 function toggleScreen(screen, forceShow, forceHide) {
   var visible = $("#" + screen).is(":visible");
@@ -326,6 +401,10 @@ function validateSettings() {
 $(".btnSettings, #btnSettings").on("click", function() {
   toggleScreen("overlaySettings");
 });
+$("#overlayScheduledAction button").on("click", function() {
+  $("#overlayScheduledAction").stop().fadeOut;
+  scheduledActionInfo.lastSkip = new Date();
+});
 $("#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)").on("change", function() {
   if ($(this).prop("tagName") == "INPUT") {
     if ($(this).prop("type") == "checkbox") {
@@ -352,6 +431,13 @@ $("#broadcastLang").on("change", function() {
 $("#btnShutdown").on("click", function() {
   powerControl.powerOff();
 });
+$(".btn-add-link").on("click", function() {
+  addNewLink();
+});
+$(".btn-add-schedule").on("click", function() {
+  addNewSchedule();
+  validateSettings();
+});
 $("#btnExport").on("click", function() {
   fs.writeFileSync(remote.dialog.showSaveDialogSync({
     defaultPath : "prefs.json"
@@ -375,6 +461,7 @@ $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", function() {
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
   shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0].replace(/\D+/g, "") + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
+  scheduledActionInfo.lastExecution = new Date();
   $("#overlayPleaseWait").fadeIn().delay(10000).fadeOut();
 });
 $(".actions").on("click", ".btn-stream", async function () {
@@ -394,6 +481,7 @@ $(".actions").on("click", ".btn-stream", async function () {
       $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
+    scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");
   } catch(err) {
     let badLink = $(this).data("link-details");
@@ -425,4 +513,28 @@ $("#overlaySettings tr.onOffToggle input.optional-action-enabled").click(functio
 });
 $(document).on("select2:open", () => {
   document.querySelector(".select2-search__field").focus();
+});
+let eventSrcElem, row;
+$(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
+  eventSrcElem = $(event.target).closest("tbody").get(0);
+  row = event.target;
+  console.log(eventSrcElem, $(event.target).find(".btn-delete:visible").length === 0);
+  if ($(event.target).find(".btn-delete:visible").length === 0) return false;
+}).on("dragover", "tr", function(){
+  event.preventDefault();
+  try {
+    if (eventSrcElem === $(event.target).closest("tbody").get(0)) {
+      let children = Array.from(event.target.parentNode.parentNode.children);
+      if (children.indexOf(event.target.parentNode) > children.indexOf(row)) {
+        event.target.parentNode.after(row);
+      } else {
+        event.target.parentNode.before(row);
+      }
+    }
+  } catch(err) {
+    console.error(err);
+  }
+}).on("dragend", "tr", function() {
+  console.log($(event.target.children).find("input, select").last().change());
+  console.log(event);
 });

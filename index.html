@@ -249,6 +249,26 @@
       </div>
     </div>
   </div>
+  <div id="overlayScheduledAction" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center">
+      <div class="align-self-center fa-5x" role="status">
+        <i class="fas fa-fw fa-clock"></i>
+      </div>
+      <div class="align-self-center" role="status">
+        <h3 id="actionDesc"></h3>
+      </div>
+      <div class="align-self-center" role="status">
+        <div class="progress" id="scheduledDelayProgress">
+          <div class="progress-bar" role="progressbar"></div>
+        </div>
+      </div>
+      <div class="align-self-center fa-2x" role="status">
+        <button type='button' class='btn btn-danger'>
+          <i class="fas fa-fw fa-hand-paper"></i>
+        </button>
+      </div>
+    </div>
+  </div>
   <div id="overlaySettings" class="flex-column p-2 overlay" style="display: none;">
     <div class="flex-column flex-grow-1 w-100" style="display: flex; overflow-y: auto;">
       <div class="accordion" id="settingsAccordion">
@@ -316,13 +336,37 @@
                     <th scope="col" class="w-25">Link type</th>
                     <th scope="col">Label</th>
                     <th scope="col">Connection details</th>
-                    <th scope="col" class="text-end"></th>
+                    <th scope="col" class="text-end"><button type='button' class='btn btn-success btn-sm btn-add-link'><i class='fas fa-plus'></i></button></th>
                   </tr>
                 </thead>
                 <tbody>
                 </tbody>
               </table>
               <input id="linkArray" type="hidden" />
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingSchedule">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSchedule" aria-expanded="false" aria-controls="collapseSchedule">
+              Schedule
+            </button>
+          </h2>
+          <div id="collapseSchedule" class="accordion-collapse collapse show" aria-labelledby="headingSchedule">
+            <div class="accordion-body">
+              <table class="table table-sm schedule table-hover">
+                <thead>
+                  <tr class="text-start">
+                    <th scope="col" class="w-25">Day</th>
+                    <th scope="col">Time</th>
+                    <th scope="col">Action to trigger</th>
+                    <th scope="col" class="text-end"><button type='button' class='btn btn-success btn-sm btn-add-schedule'><i class='fas fa-plus'></i></button></th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+              <input id="scheduleArray" type="hidden" />
             </div>
           </div>
         </div>

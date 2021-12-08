@@ -462,7 +462,16 @@ $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
   shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0].replace(/\D+/g, "") + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
   scheduledActionInfo.lastExecution = new Date();
-  $("#overlayPleaseWait").fadeIn().delay(10000).fadeOut();
+  let timeLeft = 15;
+  let loadZoomTimer = setInterval(function(){
+    $("#loadingProgress .progress-bar").css("width", (15 - timeLeft + 1) * 100 / 15 + "%");
+    if(timeLeft <= 0) {
+      clearInterval(loadZoomTimer);
+      $("#loadingProgress .progress-bar").css("width", "0%");
+    }
+    timeLeft -= 1;
+  }, 1000);
+  $("#overlayPleaseWait").fadeIn().delay(15000).fadeOut();
 });
 $(".actions").on("click", ".btn-stream", async function () {
   toggleScreen("overlayPleaseWait");
@@ -476,10 +485,13 @@ $(".actions").on("click", ".btn-stream", async function () {
     var streamLang = (await axios.get("https://fle.stream.jw.org/member/getinfo", { headers: tempHeaders })).data.data.language;
     var langSymbol = streamLangs.filter(lang => lang.locale == streamLang)[0].symbol;
     $("#lblGoHome2").html((await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json")).translations[langSymbol]["button_previous"]);
-    for (var streamFile of Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data)) {
+    let streamFiles = Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data);
+    for (var streamFile of streamFiles) {
+      $("#loadingProgress .progress-bar").css("width", (parseInt(streamFile[0]) + 1) * 100 / streamFiles.length + "%");
       var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, { headers: { Cookie: tempHeaders.cookie } });
       $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
+    $("#loadingProgress .progress-bar").css("width", "0%");
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");
@@ -518,7 +530,6 @@ let eventSrcElem, row;
 $(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
   eventSrcElem = $(event.target).closest("tbody").get(0);
   row = event.target;
-  console.log(eventSrcElem, $(event.target).find(".btn-delete:visible").length === 0);
   if ($(event.target).find(".btn-delete:visible").length === 0) return false;
 }).on("dragover", "tr", function(){
   event.preventDefault();
@@ -534,7 +545,4 @@ $(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
   } catch(err) {
     console.error(err);
   }
-}).on("dragend", "tr", function() {
-  console.log($(event.target.children).find("input, select").last().change());
-  console.log(event);
 });

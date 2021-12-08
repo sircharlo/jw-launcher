@@ -15,7 +15,7 @@ function createUpdateWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    minWidth: 1024,
+    minWidth: 1366,
     minHeight: 768,
     fullscreen: true,
     //  alwaysOnTop: true,

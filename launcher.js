@@ -141,7 +141,7 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find(".linkDetails").empty();
   thisRow.find(".linkName").val("").toggle(!!linkType);
   if (linkType === "zoom") {
-    thisRow.find(".linkDetails").append("<input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' />");
+    thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>ID</span><input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><span class='input-group-text'>Password</span><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' /></div>");
     thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"]);
   } else if (linkType === "stream") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
@@ -171,11 +171,11 @@ async function languageRefresh() {
   $("#broadcastLang").select2();
 }
 function addNewLink() {
-  $(".links tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
+  $(".links tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>");
   $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
 }
 function addNewSchedule() {
-  $(".schedule tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class=' text-end'><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>");
+  $(".schedule tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>");
   $(".schedule tbody tr").last().find(".triggerTime").inputmask("99:99");
   updateScheduleTargets();
 }
@@ -526,23 +526,38 @@ $("#overlaySettings tr.onOffToggle input.optional-action-enabled").click(functio
 $(document).on("select2:open", () => {
   document.querySelector(".select2-search__field").focus();
 });
-let eventSrcElem, row;
+$(".btn-sort-schedules").on("click", function() {
+  const getCellValue = (tr, idx) => {
+    let val = $(tr).find("td").eq(idx).find("input, select").val();
+    return (val == 0 ? val + 7 : val);
+  };
+  const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
+    v1 !== "" && v2 !== "" && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+  )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+  const table = $(".schedule tbody").get(0);
+  Array.from(table.querySelectorAll("tr")).sort(comparer(1, true)).sort(comparer(0, true)).forEach(tr => table.appendChild(tr));
+  $(".schedule tbody input, .schedule tbody schedule").last().change();
+});
+let eventSrcElem, sourceRow;
 $(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
   eventSrcElem = $(event.target).closest("tbody").get(0);
-  row = event.target;
-  if ($(event.target).find(".btn-delete:visible").length === 0) return false;
+  sourceRow = $(event.target).closest("tr");
+  if ($(event.target).closest("tr").find(".btn-delete:visible").length === 0) return false;
 }).on("dragover", "tr", function(){
   event.preventDefault();
   try {
     if (eventSrcElem === $(event.target).closest("tbody").get(0)) {
-      let children = Array.from(event.target.parentNode.parentNode.children);
-      if (children.indexOf(event.target.parentNode) > children.indexOf(row)) {
-        event.target.parentNode.after(row);
-      } else {
-        event.target.parentNode.before(row);
+      let targetRow = $(event.target).closest("tr").get(0);
+      let targetTableChildren = Array.from($(event.target).closest("tbody").get(0).children);
+      if (targetTableChildren.indexOf(targetRow) > targetTableChildren.indexOf(sourceRow.get(0))) {
+        targetRow.after(sourceRow.get(0));
+      } else if (targetTableChildren.indexOf(targetRow) < targetTableChildren.indexOf(sourceRow.get(0))) {
+        targetRow.before(sourceRow.get(0));
       }
     }
   } catch(err) {
     console.error(err);
   }
+}).on("dragend", "tr", function() {
+  sourceRow.find("input, select").last().change();
 });

@@ -142,7 +142,7 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find(".linkName").val("").toggle(!!linkType);
   if (linkType === "zoom") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>ID</span><input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><span class='input-group-text'>Password</span><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' /></div>");
-    thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"]);
+    thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"], { "clearIncomplete": true });
   } else if (linkType === "stream") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
   }
@@ -157,7 +157,11 @@ $(".schedule tbody").on("change", "input, select", function() {
   $(".schedule tbody tr").each(function () {
     scheduleArray.push($(this).find("input, select").map(function () { return $(this).val(); }).get());
   });
-  if ($(".schedule tbody tr .is-invalid:visible").length ===0) $("#scheduleArray").val(JSON.stringify(scheduleArray)).change();
+  if ($(".schedule tbody tr .is-invalid:visible").length ===0) {
+    $("#scheduleArray").val(JSON.stringify(scheduleArray)).change();
+  } else {
+    validateSettings();
+  }
 });
 async function languageRefresh() {
   let availMedia = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured")).category.media.concat((await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos")).category.media).map(item => item.availableLanguages);
@@ -176,7 +180,7 @@ function addNewLink() {
 }
 function addNewSchedule() {
   $(".schedule tbody").append("<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>");
-  $(".schedule tbody tr").last().find(".triggerTime").inputmask("99:99");
+  $(".schedule tbody tr").last().find(".triggerTime").inputmask({ regex: "[0-2]\\d:[0-5]\\d", "clearIncomplete": true });
   updateScheduleTargets();
 }
 function updateScheduleTargets() {
@@ -235,13 +239,14 @@ function buttonHeight(broadcastVideos) {
     broadcast = (broadcastVideos > 0 ? 1 : 0);
   $(".actions > div").css("height", 100 / Math.ceil((broadcast + links) / 3) + "%");
 }
-async function downloadFile(url, triggerElem) {
+async function downloadFile(url, progressElem) {
   try {
     let response = await axios.get(url, {
+      adapter: require("axios/lib/adapters/xhr"),
       responseType: "arraybuffer",
       onDownloadProgress: function(progressEvent) {
         var percent = progressEvent.loaded / progressEvent.total * 100;
-        $(triggerElem).html(percent.toFixed(0) + "%");
+        progressElem.css("width", percent + "%");
       }
     });
     return response.data;
@@ -464,10 +469,10 @@ $(".actions").on("click", ".btn-zoom", function () {
   scheduledActionInfo.lastExecution = new Date();
   let timeLeft = 15;
   let loadZoomTimer = setInterval(function(){
-    $("#loadingProgress .progress-bar").css("width", (15 - timeLeft + 1) * 100 / 15 + "%");
+    $("#loadingProgress .progress-bar").css("width", (15 - timeLeft + 1) * 100 / 15 + "%").closest("div.align-self-center").show();
     if(timeLeft <= 0) {
       clearInterval(loadZoomTimer);
-      $("#loadingProgress .progress-bar").css("width", "0%");
+      $("#loadingProgress .progress-bar").css("width", "0%").closest("div.align-self-center").hide();
     }
     timeLeft -= 1;
   }, 1000);
@@ -487,11 +492,11 @@ $(".actions").on("click", ".btn-stream", async function () {
     $("#lblGoHome2").html((await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json")).translations[langSymbol]["button_previous"]);
     let streamFiles = Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data);
     for (var streamFile of streamFiles) {
-      $("#loadingProgress .progress-bar").css("width", (parseInt(streamFile[0]) + 1) * 100 / streamFiles.length + "%");
+      $("#loadingProgress .progress-bar").css("width", (parseInt(streamFile[0]) + 1) * 100 / streamFiles.length + "%").closest("div.align-self-center").show();
       var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, { headers: { Cookie: tempHeaders.cookie } });
       $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + streamFile[1].description + "</h5></div></div>");
     }
-    $("#loadingProgress .progress-bar").css("width", "0%");
+    $("#loadingProgress .progress-bar").css("width", "0%").closest("div.align-self-center").hide();
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");
@@ -503,6 +508,8 @@ $(".actions").on("click", ".btn-stream", async function () {
   }
 });
 $("#btnRemoteAssistance").on("click", async function() {
+  $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
+  $("#overlayPleaseWait").fadeIn();
   var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
   if (os.platform() == "darwin") {
     qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
@@ -511,7 +518,10 @@ $("#btnRemoteAssistance").on("click", async function() {
   }
   var initialTriggerText = $(this).html();
   $(this).prop("disabled", true);
-  var qs = await downloadFile(qsUrl, this);
+  var qs = await downloadFile(qsUrl, $("#loadingProgress .progress-bar"));
+  $("#overlayPleaseWait").delay(15000).fadeOut(400, function() {
+    $("#loadingProgress .progress-bar").closest("div.align-self-center").hide();
+  });
   var qsFilename = path.basename(qsUrl);
   fs.writeFileSync(path.join(appPath, qsFilename), new Buffer(qs));
   shell.openExternal(path.join(appPath, qsFilename));

@@ -342,7 +342,8 @@ function scheduleLoader() {
   });
   if (schedules.length > 0 && (!scheduledActionInfo.lastExecution || (d - scheduledActionInfo.lastExecution) / 1000 / 60 / 60 > 12) && (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12)) {
     if ($("#home:visible").length > 0) {
-      for (var schedule of schedules) {
+      for (var s = 0; s < schedules.length; s++) {
+        let schedule = schedules[s];
         if (d.getDay() == schedule.triggerDay) {
           let triggerTime = schedule.triggerTime.split(":");
           let targetDate = new Date(d);
@@ -350,11 +351,9 @@ function scheduleLoader() {
           let timeToEvent = (targetDate - d) / 1000 / 60;
           if (timeToEvent >=-105 && timeToEvent <= 30) {
             console.log("[SCHEDULE] Triggering scheduled item, as we are within the acceptable timeframe");
-            $("#actionDesc").text($(".schedule tbody tr .targetAction").eq(schedule.targetAction).find("option:selected").text());
+            $("#actionDesc").text($(".schedule tbody tr .targetAction").eq(s).find("option:selected").text());
             $("#overlayScheduledAction").stop().fadeIn().delay(10000).fadeOut(400, function() {
-              if (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12) {
-                $(".actions button").eq(schedule.targetAction).click();
-              }
+              if (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12) $(".actions button").eq(schedule.targetAction).click();
             });
             let timeLeft = 10;
             let downloadTimer = setInterval(function(){

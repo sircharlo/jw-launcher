@@ -1,6 +1,10 @@
 # Welcome!
 
-Here is a simple app that facilitates launching Zoom meetings and play videos from JW Broadcasting or special programs from JW Stream, for our dear elderly ones who might have trouble doing so unassisted. There is also a feature to launch a TeamViewer session (if remote help is needed), a setting to ensure system volume is set to the desired level, and a button to shut down the computer. The app can be set to run automatically when Windows boots, which could be especially useful for an older person if combined with a password-less Windows login.
+Here is a simple app that facilitates launching Zoom meetings and special programs from JW Stream, as well as playing videos from JW Broadcasting, made specifically for our dear elderly ones who might have trouble connecting to meetings, service, assemblies, conventions and the like, on their own.
+
+There are also optional buttons to launch a TeamViewer session, should remote help be needed, and a button to shut down the computer.
+
+The app can be set to run automatically when the computer boots, and even to launch certain Zoom meetings or JW Stream events at specified times. This could be especially useful for an older person if combined with a password-less computer login. After turning on the computer, the user would then be automatically connected to the appropriate meeting, at the right time.
 
 ![Main screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/01-main.png?raw=true)
 
@@ -14,9 +18,29 @@ Once the setup is complete, a shortcut to the app will be placed on your desktop
 
 ## Configuration
 
-Most of the options are self-explanatory, such as language for JW Broadcasting, user's name, and so on. Click on the "+" button to add a link to a meeting or Stream URL; click on the "-" button to remove it.
-
 ![Settings screen of app](https://github.com/sircharlo/jw-launcher/blob/main/screenshots/02-settings.png?raw=true)
+
+#### User preferences
+
+Here, you can set the name to display on Zoom, the language for JW Broadcasting, and if the app should automatically launch on start-up.
+
+#### Links to meetings and special events
+
+Click on the "+" button to add a link to a Zoom meeting or JW Stream URL. Items can be rearranged by dragging and dropping. To delete a line, click on the red "-" button.
+
+#### Schedule
+
+Click on the "+" button to add a recurring weekly event, such as a service group or a congregation meeting. Set the usual weekday and time of the event, and the associated action to launch at that time.
+
+Events in this list will be auto-launched at the defined time, if JW Launcher is opened or already running at that time.
+
+> **Note:** The predetermined window during which a scheduled event will be auto-launched is defined as the time period extending from 30 minutes _before_ the event's start time, to 105 minutes (1h45m) _after_ the start time. This will ensure that the user is automatically reconnected if the computer or JW Launcher is restarted during an event.
+
+ As many items as needed can be created. Actions can be scheduled more than once per week, and can be rearranged by dragging and dropping. The Sort All button will sort events by weekday and time. To delete an event, click on the red "-" button.
+
+ #### Action buttons
+
+ Here, you can hide or show the buttons that allow the user to shutdown their computer, or launch a TeamViewer session. You can also set the names of the action buttons, to make them easier to recognize for the user.
 
 ## Technical usage notes
 

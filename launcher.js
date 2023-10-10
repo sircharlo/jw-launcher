@@ -78,23 +78,33 @@ function goAhead() {
     scheduleLoader();
   });
 }
+function isEscapeButton(event) {
+  return event.key === "Escape" || event.key === "Esc"
+}
+function supportKey(event) {
+  return !(event.ctrlKey || event.metaKey || event.shiftKey) && (event.code.includes("Key") || isEscapeButton(event));
+}
 function handleKeyPress (event) {
-  if (event.code.includes("Key") && !$("#overlayPleaseWait").is(":visible") && !(event.ctrlKey || event.metaKey || event.shiftKey)) {
-    if ($("#home").is(":visible")) {
-      if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").filter(function() {
-        return $(this).find(".linkName").val() !== "";
-      }).length + 65).toLowerCase()) {
-        $("#broadcast1button").click();
-      } else {
-        $(".actions .buttonContainer button").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
-      }
-    } else if ($("#closeButton").is(":visible") && event.key.toLowerCase() == "x") {
-      $("#closeButton").click();
-    } else if ($(".featuredVideos").is(":visible") && !$("#closeButton").is(":visible")) {
-      $(".featuredVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
-    } else if ($(".streamingVideos").is(":visible") && $("#closeButton").is(":not(:visible)")) {
-      $(".streamingVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+  if (!supportKey(event) || $("#overlayPleaseWait").is(":visible")) {
+    return;
+  }
+
+  if ($("#home").is(":visible")) {
+    if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").filter(function() {
+      return $(this).find(".linkName").val() !== "";
+    }).length + 65).toLowerCase()) {
+      $("#broadcast1button").click();
+    } else {
+      $(".actions .buttonContainer button").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
     }
+  } else if ($("#closeButton").is(":visible") && (event.key.toLowerCase() == "x" || isEscapeButton(event))) {
+    $("#closeButton").click();
+  } else if ($(".go-home").is(":visible") && isEscapeButton(event)) {
+    $("#btnGoHome").click();
+  } else if ($(".featuredVideos").is(":visible") && !$("#closeButton").is(":visible")) {
+    $(".featuredVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+  } else if ($(".streamingVideos").is(":visible") && $("#closeButton").is(":not(:visible)")) {
+    $(".streamingVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
   }
 }
 function isReachable(hostname, port) {

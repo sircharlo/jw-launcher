@@ -1,4 +1,4 @@
-const axios = require("axios"),
+const axios = require('axios').default,
   net = require("net"),
   remote = require("@electron/remote"),
   fs = require("graceful-fs"),
@@ -8,13 +8,13 @@ const axios = require("axios"),
   {shell} = require("electron"),
   $ = require("jquery");
 const appPath = remote.app.getPath("userData"),
-  //          green      pink       blue     deeporange   purple     yellow      cyen      brown
+  //          green      pink       blue     deeporange   purple     yellow      cyan      brown
   colors = ["#00e676", "#ff80ab", "#64b5f6", "#ffb74d", "#ea80fc", "#ffff8d", "#18ffff", "#bcaaa4"],
   prefsFile = path.join(appPath, "prefs.json");
 var scheduledActionInfo = {},
   broadcastStrings = {},
   prefs = {};
-axios.defaults.adapter = require("axios/lib/adapters/http");
+axios.defaults.adapter = "http";
 function checkInternet(online) {
   if (online) {
     $("#overlayInternetCheck").fadeIn("fast", () => {

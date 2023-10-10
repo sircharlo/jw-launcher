@@ -1,10 +1,5 @@
-const {
-    app,
-    BrowserWindow,
-    ipcMain
-  } = require("electron"), {
-    autoUpdater
-  } = require("electron-updater"),
+const { app, BrowserWindow, ipcMain } = require("electron"),
+  { autoUpdater } = require("electron-updater"),
   os = require("os"),
   remote = require("@electron/remote/main");
 var win = {};
@@ -13,13 +8,13 @@ function createUpdateWindow() {
   win = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
     },
     minWidth: 1366,
     minHeight: 768,
     fullscreen: true,
     //  alwaysOnTop: true,
-    title: "JW Launcher"
+    title: "JW Launcher",
   });
   const ses = win.webContents.session;
   ses.clearCache();
@@ -28,7 +23,9 @@ function createUpdateWindow() {
   win.setMenuBarVisibility(false);
   win.loadFile("index.html");
   win.maximize();
-  win.on("show", () => { win.focus(); });
+  win.on("show", () => {
+    win.focus();
+  });
   win.show();
 }
 const gotTheLock = app.requestSingleInstanceLock();
@@ -43,7 +40,11 @@ if (!gotTheLock) {
   });
   ipcMain.on("autoUpdate", () => {
     win.webContents.send("hideThenShow", ["InternetCheck", "UpdateCheck"]);
-    autoUpdater.checkForUpdates();
+    autoUpdater.checkForUpdates().then((result) => {
+      if (!result) {
+        win.webContents.send("goAhead");
+      }
+    });
   });
   autoUpdater.on("error", () => {
     win.webContents.send("goAhead");
@@ -64,7 +65,10 @@ if (!gotTheLock) {
     win.webContents.send("updateDownloadProgress", [prog.percent]);
   });
   autoUpdater.on("update-downloaded", () => {
-    win.webContents.send("hideThenShow", ["UpdateAvailable", "UpdateDownloaded"]);
+    win.webContents.send("hideThenShow", [
+      "UpdateAvailable",
+      "UpdateDownloaded",
+    ]);
     setImmediate(() => {
       autoUpdater.quitAndInstall();
     });

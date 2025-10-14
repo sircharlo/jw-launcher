@@ -15,6 +15,10 @@ var scheduledActionInfo = {},
   broadcastStrings = {},
   prefs = {},
   streamAuth = {};
+  
+// Map of action key -> jQuery button selector for advanced actions (Shutdown/Remote/Settings/Close)
+let actionShortcutMap = new Map();
+
 // Use axios default adapter selection (XHR in renderer, HTTP in Node)
 function checkInternet(online) {
   if (online) {
@@ -109,6 +113,13 @@ function setShortcutScope(scope) {
     switch (currentShortcutScope) {
       case "home": {
         if (key === "escape") return; // nothing to do
+        // First, check reverse alphabetical shortcuts for advanced actions
+        if (actionShortcutMap.has(key)) {
+          event.preventDefault();
+          const sel = actionShortcutMap.get(key);
+          try { $(sel).click(); } catch(_) {}
+          return;
+        }
         const linksCount = $(".links tbody tr").filter(function() { return $(this).find(".linkName").val() !== ""; }).length;
         const broadcastKey = String.fromCharCode(linksCount + 65).toLowerCase();
         if (key === broadcastKey) {
@@ -351,7 +362,14 @@ async function getJson(url) {
   return response;
 }
 function prefsInitialize() {
-  for (var pref of ["linkArray", "scheduleArray", "labelShutdown", "labelRemoteAssistance", "labelSettings", "autoRunAtBoot", "enableShutdown", "enableRemoteAssistance", "username"]) {
+  for (var pref of [
+    "linkArray", "scheduleArray",
+    "labelShutdown", "labelRemoteAssistance", "labelSettings", "labelClose",
+    "autoRunAtBoot",
+    "enableShutdown", "enableRemoteAssistance", "enableClose",
+    "enableShortcutShutdown", "enableShortcutRemoteAssistance", "enableShortcutSettings", "enableShortcutClose",
+    "username"
+  ]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
       prefs[pref] = null;
     }
@@ -385,12 +403,14 @@ function prefsInitialize() {
   processSettings();
 }
 function processSettings() {
-  for (var label of ["Settings", "Shutdown", "RemoteAssistance"]) {
+  for (var label of ["Settings", "Shutdown", "RemoteAssistance", "Close"]) {
     $("#lbl" + label).html(prefs["label" + label]);
   }
   for (var enableMe of ["Shutdown", "RemoteAssistance"]) {
     $("#btn" + enableMe).parent().toggle(!!prefs["enable" + enableMe]);
   }
+  // Close action visibility
+  $("#btnCloseContainer").toggle(!!prefs.enableClose);
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
@@ -400,7 +420,23 @@ function processSettings() {
     }
     validateSettings();
     buttonHeight(broadcastVideos);
+    updateActionShortcuts();
   });
+}
+function updateActionShortcuts() {
+  // Build list of visible actions with shortcut enabled, in priority order: Close, Settings, Remote, Shutdown
+  const candidates = [];
+  if (prefs.enableClose && prefs.enableShortcutClose) candidates.push({ key: null, sel: "#btnClose" });
+  if (prefs.enableShortcutSettings) candidates.push({ key: null, sel: "#btnSettings" });
+  if (prefs.enableRemoteAssistance && prefs.enableShortcutRemoteAssistance) candidates.push({ key: null, sel: "#btnRemoteAssistance" });
+  if (prefs.enableShutdown && prefs.enableShortcutShutdown) candidates.push({ key: null, sel: "#btnShutdown" });
+  // Assign reverse alphabetical keys starting from 'z'
+  actionShortcutMap = new Map();
+  let code = 'z'.charCodeAt(0);
+  for (let i = 0; i < candidates.length; i++) {
+    const k = String.fromCharCode(code - i);
+    actionShortcutMap.set(k, candidates[i].sel);
+  }
 }
 function scheduleLoader() {
   let d = new Date();
@@ -508,6 +544,9 @@ $("#broadcastLang").on("change", function() {
 });
 $("#btnShutdown").on("click", function() {
   powerControl.powerOff();
+});
+$("#btnClose").on("click", function() {
+  try { remote.app.quit(); } catch (e) { console.error(e); }
 });
 $(".btn-add-link").on("click", function() {
   addNewLink();

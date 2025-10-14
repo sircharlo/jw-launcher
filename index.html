@@ -429,7 +429,8 @@
                 <thead>
                   <tr class="text-start">
                     <th scope="col" class="col-3">Action</th>
-                    <th scope="col" class="col-8">Label</th>
+                    <th scope="col" class="col-7">Label</th>
+                    <th scope="col" class="col-1 text-center">Shortcut</th>
                     <th scope="col" class="col-1 text-end">Show</th>
                   </tr>
                 </thead>
@@ -440,6 +441,12 @@
                     </td>
                     <td>
                       <input type="text" class="form-control form-control-sm" placeholder="Shutdown" id="labelShutdown" required />
+                    </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutShutdown" />
+                        <label class="form-check-label" for="enableShortcutShutdown"></label>
+                      </div>
                     </td>
                     <td>
                       <div class="form-check form-switch">
@@ -455,6 +462,12 @@
                     <td>
                       <input type="text" class="form-control form-control-sm" placeholder="Remote assistance" id="labelRemoteAssistance" required />
                     </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutRemoteAssistance" />
+                        <label class="form-check-label" for="enableShortcutRemoteAssistance"></label>
+                      </div>
+                    </td>
                     <td>
                       <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input optional-action-enabled" id="enableRemoteAssistance" />
@@ -469,10 +482,36 @@
                     <td>
                       <input type="text" class="form-control form-control-sm" placeholder="Settings" id="labelSettings" required />
                     </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutSettings" />
+                        <label class="form-check-label" for="enableShortcutSettings"></label>
+                      </div>
+                    </td>
                     <td>
                       <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input optional-action-enabled" checked disabled id="enableSettings" />
                         <label class="form-check-label" for="enableSettings"></label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="onOffToggle">
+                    <td>
+                      <div class="desc">Close application</div>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm" placeholder="Close" id="labelClose" required />
+                    </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutClose" />
+                        <label class="form-check-label" for="enableShortcutClose"></label>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableClose" />
+                        <label class="form-check-label" for="enableClose"></label>
                       </div>
                     </td>
                   </tr>
@@ -525,6 +564,11 @@
       <div class="flex-grow-1 h-100">
         <button class="btn btn-secondary col h-100 w-100" id="btnSettings">
           <i class="fas fa-fw fa-user-cog"></i> <span id="lblSettings"></span>
+        </button>
+      </div>
+      <div class="flex-grow-1 h-100" id="btnCloseContainer" style="display: none;">
+        <button class="btn btn-secondary col h-100 w-100" id="btnClose">
+          <i class="fas fa-fw fa-times"></i> <span id="lblClose"></span>
         </button>
       </div>
     </div>

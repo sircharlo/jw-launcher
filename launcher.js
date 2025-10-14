@@ -13,7 +13,8 @@ const appPath = remote.app.getPath("userData"),
   prefsFile = path.join(appPath, "prefs.json");
 var scheduledActionInfo = {},
   broadcastStrings = {},
-  prefs = {};
+  prefs = {},
+  streamAuth = {};
 axios.defaults.adapter = "http";
 function checkInternet(online) {
   if (online) {
@@ -474,8 +475,55 @@ $("#broadcast1button").on("click", function() {
 $("#btnGoHome, #btnGoHome2").on("click", function() {
   toggleScreen("videos");
 });
-$(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", function() {
-  $("#videoPlayer").append("<video controls autoplay><source src='" + $(this).data("url") + "' / ></video>").fadeIn();
+$(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async function() {
+  try {
+    toggleScreen("overlayPleaseWait");
+    const guid = $(this).data("guid");
+    const specialtyGuid = $(this).data("specialty");
+    const url = $(this).data("playurl") || $(this).data("url");
+    const audioUrl = $(this).data("audiourl") || "";
+    const quality = $(this).data("quality") || "undefined";
+    const client = axios.create({ baseURL: "https://stream.jw.org", withCredentials: true });
+    let headers = {
+      "accept": "application/json",
+      "content-type": "application/json",
+      "oidc-domain": "jworg",
+      "xsrf-token-stream": streamAuth.xsrfToken || "",
+      Cookie: streamAuth.cookieHeader || "",
+      Referer: "https://stream.jw.org/home?playerOpen=true"
+    };
+    await client.put("/api/v1/libraryBranch/program/presignURL", { guid, specialtyGuid, url, audioUrl, programUrlType: "video", quality, size: 0, legacyQuality: "", programType: "vod", isHome: true, isAudioOnly: false }, { headers });
+    const detail = await client.get(`/api/v1/program/getByGuidForHome/vod/${guid}`, { headers: { ...headers, "content-type": undefined } });
+    if (detail && detail.data && Array.isArray(detail.data.downloadUrls)) {
+      const dls = detail.data.downloadUrls;
+      const preferred = dls.find(d => d.quality === "720") || dls.find(d => d.quality === "540") || dls.find(d => d.quality === "360") || dls[0];
+      const mp4Url = preferred && preferred.url ? preferred.url : null;
+      if (mp4Url) {
+        const presignBody = {
+          guid,
+          specialtyGuid,
+          url: mp4Url,
+          quality: preferred.quality || "undefined",
+          size: preferred.size || 0,
+          legacyQuality: preferred.legacyQuality || "",
+          programType: detail.data.programType || "vod",
+          isHome: true,
+          isAudioOnly: false,
+          category_categoryType: detail.data.category_categoryType,
+          category_guid: detail.data.category_guid
+        };
+        const presigned = await client.put("/api/v1/libraryBranch/program/presignURL", presignBody, { headers });
+        console.log("Presigned response: ", presigned);
+        const signedUrl = (presigned && presigned.data && (presigned.data.presignedUrl || presigned.data.url)) ? (presigned.data.presignedUrl || presigned.data.url) : mp4Url;
+        console.log("Signed URL: ", signedUrl);
+        $("#videoPlayer").append("<video controls autoplay><source src='" + signedUrl + "' / ></video>").fadeIn();
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    toggleScreen("overlayPleaseWait");
+  }
 });
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
@@ -498,19 +546,111 @@ $(".actions").on("click", ".btn-stream", async function () {
     $("#videos>div").hide();
     $(".streamingVideos").first().parent().show();
     $(".streamingVideos > div:not(:first)").remove();
-    let tempHeaders = { "x-requested-with": "XMLHttpRequest" };
-    let streamLangs = (await axios.get("https://fle.stream.jw.org/language/getlanguages", { headers: tempHeaders })).data.languages;
-    tempHeaders.cookie = (await axios.post("https://fle.stream.jw.org/token/check", JSON.stringify({ token: decodeURIComponent($(this).data("link-details").split(",")[0]).split("/").slice(-1)[0] }), { headers: tempHeaders })).headers["set-cookie"].join("; ");
-    var streamLang = (await axios.get("https://fle.stream.jw.org/member/getinfo", { headers: tempHeaders })).data.data.language;
-    var langSymbol = streamLangs.filter(lang => lang.locale == streamLang)[0].symbol;
-    $("#lblGoHome2").html((await getJson("https://prod-assets.stream.jw.org/translations/" + langSymbol + ".json")).translations[langSymbol]["button_previous"]);
-    let streamFiles = Object.entries((await axios.post("https://fle.stream.jw.org/event/languageVideos", JSON.stringify({ language: streamLangs.filter(lang => lang.locale == streamLang)[0] }), { headers: tempHeaders })).data);
-    for (var streamFile of streamFiles) {
-      $("#loadingProgress .progress-bar").css("width", (parseInt(streamFile[0]) + 1) * 100 / streamFiles.length + "%").closest("div.align-self-center").show();
-      var mediaFile = await axios.head(streamFile[1].vod_firstfile_url, { headers: { Cookie: tempHeaders.cookie } });
-      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + mediaFile.request.protocol + "//" + mediaFile.request.host + mediaFile.request.path + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(parseInt(streamFile[0]) + 66) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + streamFile[1].description + "</h5></div></div>");
+    let linkTokenRaw = decodeURIComponent($(this).data("link-details").split(",")[0]);
+    let linkToken = linkTokenRaw.split("/").slice(-1)[0];
+    console.log("Creating axios client for link token: ", linkToken);
+    const client = axios.create({
+      baseURL: "https://stream.jw.org",
+      withCredentials: true,
+      xsrfCookieName: "xsrf-token-stream",
+      xsrfHeaderName: "xsrf-token-stream",
+      headers: {
+        "accept": "application/json",
+        "x-requested-with": "XMLHttpRequest"
+      }
+    });
+    console.log("Created axios client for link token: ", linkToken, client);
+    const loginRes = await client.post("/api/v1/auth/login/share", { token: linkToken }, { headers: { Referer: `https://stream.jw.org/${linkToken}` } });
+    console.log("Login response: ", loginRes);
+    const cookieJar = new Map();
+    const setFrom = (res) => {
+      let sc = res && res.headers ? res.headers["set-cookie"] : null;
+      if (!sc) return;
+      for (const c of sc) {
+        const parts = c.split(";").map(s => s.trim());
+        const pair = parts[0];
+        const eq = pair.indexOf("=");
+        if (eq > 0) cookieJar.set(pair.substring(0, eq).trim(), pair.substring(eq + 1));
+        const maxAgeAttr = parts.find(p => /^Max-Age=/i.test(p));
+        if (maxAgeAttr) {
+          const maxAge = parseInt(maxAgeAttr.split("=")[1]);
+          if (!isNaN(maxAge)) {
+            const exp = Math.floor(Date.now() / 1000) + maxAge;
+            cookieJar.set("stream-session-expiry", String(exp));
+          }
+        }
+      }
+    };
+    setFrom(loginRes);
+    let xsrfToken = cookieJar.get("xsrf-token-stream");
+    let cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
+    const whoamiRes = await client.get("/api/v1/auth/whoami", { headers: { Referer: `https://stream.jw.org/${linkToken}`, "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
+    console.log("Whoami response: ", whoamiRes);
+    setFrom(whoamiRes);
+    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
+    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
+    const linkRes = await client.get(`/api/v1/libraryBranch/library/link/${linkToken}`, { headers: { Referer: `https://stream.jw.org/${linkToken}`, "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
+    console.log("Link response: ", linkRes);
+    setFrom(linkRes);
+    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
+    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
+    const categoriesRes = await client.get("/api/v1/libraryBranch/home/category", { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
+    console.log("Categories response: ", categoriesRes);
+    setFrom(categoriesRes);
+    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
+    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
+    const categoryList = Array.isArray(categoriesRes.data) ? categoriesRes.data : (categoriesRes.data && Array.isArray(categoriesRes.data.items) ? categoriesRes.data.items : []);
+    const categoryType = (categoryList.find(x => x && x.categoryType) || {}).categoryType || "theocraticProgram";
+    const subCatsRes = await client.get(`/api/v1/libraryBranch/home/subCategory/${categoryType}`, { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
+    console.log("Subcategories response: ", subCatsRes);
+    streamAuth = { xsrfToken, cookieHeader };
+    let specialtyIds = [];
+    if (subCatsRes && subCatsRes.data) {
+      if (Array.isArray(subCatsRes.data)) {
+        specialtyIds = subCatsRes.data.map(x => x.id).filter(Boolean);
+      } else if (Array.isArray(subCatsRes.data.items)) {
+        specialtyIds = subCatsRes.data.items.map(x => x.id).filter(Boolean);
+      }
+    }
+    if (specialtyIds.length === 0) specialtyIds = ["49ef88c8-3212-49ef-a810-b26a60217d35"];
+    let allPrograms = [];
+    for (let i = 0; i < specialtyIds.length; i++) {
+      $("#loadingProgress .progress-bar").css("width", ((i + 1) * 100) / specialtyIds.length + "%").closest("div.align-self-center").show();
+      try {
+        console.log("Fetching program for specialty ID: ", specialtyIds[i]);
+        const prog = await client.get(`/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`, { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
+        console.log("Program response: ", prog);
+        if (prog && prog.data) allPrograms.push(prog.data);
+      } catch(e) { }
     }
     $("#loadingProgress .progress-bar").css("width", "0%").closest("div.align-self-center").hide();
+    let items = [];
+    for (const p of allPrograms) {
+      let arr = [];
+      if (Array.isArray(p)) arr = p;
+      else if (Array.isArray(p.items)) arr = p.items;
+      else if (Array.isArray(p.programs)) arr = p.programs;
+      for (const it of arr) items.push(it);
+    }
+    let added = 0;
+    for (let idx = 0; idx < items.length; idx++) {
+      const it = items[idx] || {};
+      let playUrl = (it.playUrl && it.playUrl.url) ? it.playUrl.url : null;
+      if (!playUrl && Array.isArray(it.downloadUrls) && it.downloadUrls.length > 0) {
+        const preferred = it.downloadUrls.find(d => d.quality === "720") || it.downloadUrls.find(d => d.quality === "540") || it.downloadUrls[0];
+        playUrl = preferred && preferred.url ? preferred.url : null;
+      }
+      if (!playUrl) continue;
+      const thumb = (typeof it.thumbnail === "string" && it.thumbnail.length > 0) ? (it.thumbnail.startsWith("/") ? ("https://stream.jw.org" + it.thumbnail) : it.thumbnail) : "";
+      const pub = it.publishedDate ? new Date(parseInt(it.publishedDate)).toLocaleDateString() : "";
+      const desc = it.title || it.subcategory_name || it.categoryProgramType || "Program";
+      const guid = it.key || it.guid || (it.playUrl && it.playUrl.guid) || "";
+      const specialtyGuid = (it.playUrl && it.playUrl.specialtyGuid) || it.specialtyGuid || "";
+      const audioUrl = (it.playUrl && it.playUrl.audioUrl) || "";
+      const quality = (it.playUrl && it.playUrl.quality) || "undefined";
+      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + playUrl + "' data-playurl='" + playUrl + "' data-guid='" + guid + "' data-specialty='" + specialtyGuid + "' data-audiourl='" + audioUrl + "' data-quality='" + quality + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><img src='" + thumb + "' style='height:64px;width:auto;margin-right:8px'/>" + "<div><h5>" + desc + "</h5>" + (pub ? ("<div>" + pub + "</div>") : "") + "</div></div></div>");
+      added++;
+    }
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");

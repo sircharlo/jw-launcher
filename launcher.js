@@ -403,8 +403,9 @@ function prefsInitialize() {
   processSettings();
 }
 function processSettings() {
+  const defaultLabels = { Settings: "Settings", Shutdown: "Shutdown", RemoteAssistance: "Remote assistance", Close: "Close" };
   for (var label of ["Settings", "Shutdown", "RemoteAssistance", "Close"]) {
-    $("#lbl" + label).html(prefs["label" + label]);
+    $("#lbl" + label).html(prefs["label" + label] || defaultLabels[label]);
   }
   for (var enableMe of ["Shutdown", "RemoteAssistance"]) {
     $("#btn" + enableMe).parent().toggle(!!prefs["enable" + enableMe]);
@@ -421,6 +422,7 @@ function processSettings() {
     validateSettings();
     buttonHeight(broadcastVideos);
     updateActionShortcuts();
+    renderActionShortcutBadges();
   });
 }
 function updateActionShortcuts() {
@@ -436,6 +438,25 @@ function updateActionShortcuts() {
   for (let i = 0; i < candidates.length; i++) {
     const k = String.fromCharCode(code - i);
     actionShortcutMap.set(k, candidates[i].sel);
+  }
+}
+function renderActionShortcutBadges() {
+  // Clear existing badges
+  $("#kbdShutdown, #kbdRemoteAssistance, #kbdSettings, #kbdClose").each(function(){ $(this).html("").hide(); });
+  // Helper to find key by selector
+  const getKeyForSelector = (sel) => {
+    for (const [k, v] of actionShortcutMap.entries()) if (v === sel) return k;
+    return null;
+  };
+  const mapping = [
+    { sel: "#btnShutdown", kbd: "#kbdShutdown" },
+    { sel: "#btnRemoteAssistance", kbd: "#kbdRemoteAssistance" },
+    { sel: "#btnSettings", kbd: "#kbdSettings" },
+    { sel: "#btnClose", kbd: "#kbdClose" },
+  ];
+  for (const m of mapping) {
+    const key = getKeyForSelector(m.sel);
+    if (key) $(m.kbd).html("<kbd>" + key.toUpperCase() + "</kbd>").show();
   }
 }
 function scheduleLoader() {

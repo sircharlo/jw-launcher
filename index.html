@@ -547,28 +547,44 @@
     </div>
     <div class="advanced-actions align-items-center gx-2 justify-content-center pt-2 px-2 row row-cols-auto">
       <div class="flex-grow-1 h-100">
-        <button class="btn btn-danger col h-100 w-100" id="btnShutdown">
-          <i class="fas fa-fw fa-power-off"></i> <span id="lblShutdown"></span>
+        <button class="btn btn-danger d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnShutdown">
+          <div class="kbd action-kbd mx-2 position-absolute" id="kbdShutdown" style="left: 0;"></div>
+          <div class="text-center">
+            <div><i class="fas fa-fw fa-power-off"></i></div>
+            <div><span id="lblShutdown"></span></div>
+          </div>
         </button>
       </div>
       <div class="flex-grow-1 h-100">
-        <button class="btn btn-info col h-100 w-100" id="btnRemoteAssistance">
-          <i class="fas fa-fw fa-hands-helping"></i> <span id="lblRemoteAssistance"></span>
+        <button class="btn btn-info d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnRemoteAssistance">
+          <div class="kbd action-kbd mx-2 position-absolute" id="kbdRemoteAssistance" style="left: 0;"></div>
+          <div class="text-center">
+            <div><i class="fas fa-fw fa-hands-helping"></i></div>
+            <div><span id="lblRemoteAssistance"></span></div>
+          </div>
         </button>
       </div>
       <div class="flex-grow-1 h-100" style="display: none;">
-        <button class="btn btn-warning col h-100 w-100" id="btn-mac-update">
+        <button class="btn btn-warning col h-100 justify-content-center w-100" id="btn-mac-update">
           <i class="fas fa-fw fa-exclamation-triangle"></i> Update available!
         </button>
       </div>
       <div class="flex-grow-1 h-100">
-        <button class="btn btn-secondary col h-100 w-100" id="btnSettings">
-          <i class="fas fa-fw fa-user-cog"></i> <span id="lblSettings"></span>
+        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnSettings">
+          <div class="kbd action-kbd mx-2 position-absolute" id="kbdSettings" style="left: 0;"></div>
+          <div class="text-center">
+            <div><i class="fas fa-fw fa-user-cog"></i></div>
+            <div><span id="lblSettings"></span></div>
+          </div>
         </button>
       </div>
       <div class="flex-grow-1 h-100" id="btnCloseContainer" style="display: none;">
-        <button class="btn btn-secondary col h-100 w-100" id="btnClose">
-          <i class="fas fa-fw fa-times"></i> <span id="lblClose"></span>
+        <button class="btn btn-warning d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnClose">
+          <div class="kbd action-kbd mx-2 position-absolute" id="kbdClose" style="left: 0;"></div>
+          <div class="text-center">
+            <div><i class="fas fa-fw fa-times"></i></div>
+            <div><span id="lblClose"></span></div>
+          </div>
         </button>
       </div>
     </div>

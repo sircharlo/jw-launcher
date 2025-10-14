@@ -15,7 +15,7 @@ var scheduledActionInfo = {},
   broadcastStrings = {},
   prefs = {},
   streamAuth = {};
-axios.defaults.adapter = "http";
+// Use axios default adapter selection (XHR in renderer, HTTP in Node)
 function checkInternet(online) {
   if (online) {
     $("#overlayInternetCheck").fadeIn("fast", () => {
@@ -317,7 +317,6 @@ function buttonHeight(broadcastVideos) {
 async function downloadFile(url, progressElem) {
   try {
     let response = await axios.get(url, {
-      adapter: require("axios/lib/adapters/xhr"),
       responseType: "arraybuffer",
       onDownloadProgress: function(progressEvent) {
         var percent = progressEvent.loaded / progressEvent.total * 100;
@@ -518,9 +517,12 @@ $(".btn-add-schedule").on("click", function() {
   validateSettings();
 });
 $("#btnExport").on("click", function() {
-  fs.writeFileSync(remote.dialog.showSaveDialogSync({
+  const outPath = remote.dialog.showSaveDialogSync({
     defaultPath : "prefs.json"
-  }), JSON.stringify(prefs, null, 2));
+  });
+  if (outPath) {
+    fs.writeFileSync(outPath, JSON.stringify(prefs, null, 2));
+  }
 });
 $("#closeButton").on("click", function() {
   $("#videoPlayer").fadeOut().find("video").remove();
@@ -770,9 +772,19 @@ $("#btnRemoteAssistance").on("click", async function() {
     $("#loadingProgress .progress-bar").closest("div.align-self-center").hide();
   });
   var qsFilename = path.basename(qsUrl);
-  fs.writeFileSync(path.join(appPath, qsFilename), new Buffer(qs));
-  shell.openExternal(path.join(appPath, qsFilename));
-  $(this).html(initialTriggerText).prop("disabled", false);
+  try {
+    if (qs && !(qs instanceof Error)) {
+      const destPath = path.join(appPath, qsFilename);
+      fs.writeFileSync(destPath, Buffer.from(qs));
+      shell.openExternal(destPath);
+    } else {
+      console.error("Failed to download TeamViewer QuickSupport:", qs);
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    $(this).html(initialTriggerText).prop("disabled", false);
+  }
 });
 $("#overlaySettings tr.onOffToggle").on("click", function() {
   $(this).find("input.optional-action-enabled").click();

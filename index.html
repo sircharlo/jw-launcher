@@ -429,8 +429,9 @@
                 <thead>
                   <tr class="text-start">
                     <th scope="col" class="col-3">Action</th>
-                    <th scope="col" class="col-7">Label</th>
+                    <th scope="col" class="col-6">Label</th>
                     <th scope="col" class="col-1 text-center">Shortcut</th>
+                    <th scope="col" class="col-1 text-center">Confirm?</th>
                     <th scope="col" class="col-1 text-end">Show</th>
                   </tr>
                 </thead>
@@ -446,6 +447,12 @@
                       <div class="form-check form-switch d-inline-block">
                         <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutShutdown" />
                         <label class="form-check-label" for="enableShortcutShutdown"></label>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input" id="confirmShutdown" />
+                        <label class="form-check-label" for="confirmShutdown"></label>
                       </div>
                     </td>
                     <td>
@@ -468,6 +475,12 @@
                         <label class="form-check-label" for="enableShortcutRemoteAssistance"></label>
                       </div>
                     </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input" id="confirmRemoteAssistance" />
+                        <label class="form-check-label" for="confirmRemoteAssistance"></label>
+                      </div>
+                    </td>
                     <td>
                       <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input optional-action-enabled" id="enableRemoteAssistance" />
@@ -488,6 +501,12 @@
                         <label class="form-check-label" for="enableShortcutSettings"></label>
                       </div>
                     </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input" id="confirmSettings" disabled />
+                        <label class="form-check-label" for="confirmSettings"></label>
+                      </div>
+                    </td>
                     <td>
                       <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input optional-action-enabled" checked disabled id="enableSettings" />
@@ -506,6 +525,12 @@
                       <div class="form-check form-switch d-inline-block">
                         <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutClose" />
                         <label class="form-check-label" for="enableShortcutClose"></label>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="form-check form-switch d-inline-block">
+                        <input type="checkbox" class="form-check-input" id="confirmClose" />
+                        <label class="form-check-label" for="confirmClose"></label>
                       </div>
                     </td>
                     <td>
@@ -627,6 +652,21 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div id="overlayConfirm" class="overlay justify-content-center" style="display: none;">
+    <div class="align-self-center text-center">
+      <div class="mb-3">
+        <h4 id="overlayConfirmMessage"></h4>
+      </div>
+      <div class="d-flex gap-2 justify-content-center">
+        <button type="button" class="btn btn-success" id="overlayConfirmYes">
+          <span class="me-2"><kbd>Y</kbd></span>Yes
+        </button>
+        <button type="button" class="btn btn-secondary" id="overlayConfirmNo">
+          <span class="me-2"><kbd>N</kbd></span>No
+        </button>
       </div>
     </div>
   </div>

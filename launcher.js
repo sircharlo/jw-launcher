@@ -368,6 +368,8 @@ function prefsInitialize() {
     "autoRunAtBoot",
     "enableShutdown", "enableRemoteAssistance", "enableClose",
     "enableShortcutShutdown", "enableShortcutRemoteAssistance", "enableShortcutSettings", "enableShortcutClose",
+    // confirm toggles
+    "confirmShutdown", "confirmRemoteAssistance", "confirmSettings", "confirmClose",
     "username"
   ]) {
     if (!(Object.keys(prefs).includes(pref)) || !prefs[pref]) {
@@ -401,6 +403,44 @@ function prefsInitialize() {
     $(".schedule tbody tr").last().find("input").first().change();
   }
   processSettings();
+}
+// Reusable confirmation overlay with keyboard shortcuts
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    const $overlay = $("#overlayConfirm");
+    const $msg = $("#overlayConfirmMessage");
+    const $yes = $("#overlayConfirmYes");
+    const $no = $("#overlayConfirmNo");
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      $yes.off("click", onYes);
+      $no.off("click", onNo);
+      window.removeEventListener("keyup", onKey, true);
+      $overlay.fadeOut("fast");
+    };
+    const onYes = () => { resolve(true); cleanup(); };
+    const onNo = () => { resolve(false); cleanup(); };
+    const onKey = (e) => {
+      if (!supportKey(e)) return;
+      const key = isEscapeButton(e) ? "escape" : String(e.key || "").toLowerCase();
+      if (key === "y") { e.preventDefault(); onYes(); }
+      else if (key === "n" || key === "escape") { e.preventDefault(); onNo(); }
+    };
+    $msg.text(message);
+    $yes.on("click", onYes);
+    $no.on("click", onNo);
+    window.addEventListener("keyup", onKey, true);
+    $overlay.fadeIn("fast");
+  });
+}
+async function confirmIfNeeded(prefKey, actionDesc, proceedFn) {
+  if (prefs[prefKey]) {
+    const ok = await showConfirm(`Are you sure you want to ${actionDesc}?`);
+    if (!ok) return;
+  }
+  proceedFn();
 }
 function processSettings() {
   const defaultLabels = { Settings: "Settings", Shutdown: "Shutdown", RemoteAssistance: "Remote assistance", Close: "Close" };
@@ -564,10 +604,14 @@ $("#broadcastLang").on("change", function() {
   $(".featuredVideos > div:not(:first-of-type)").remove();
 });
 $("#btnShutdown").on("click", function() {
-  powerControl.powerOff();
+  confirmIfNeeded("confirmShutdown", (prefs.labelShutdown || "Shutdown").toLowerCase(), () => {
+    powerControl.powerOff();
+  });
 });
 $("#btnClose").on("click", function() {
-  try { remote.app.quit(); } catch (e) { console.error(e); }
+  confirmIfNeeded("confirmClose", (prefs.labelClose || "Close").toLowerCase(), () => {
+    try { remote.app.quit(); } catch (e) { console.error(e); }
+  });
 });
 $(".btn-add-link").on("click", function() {
   addNewLink();
@@ -817,9 +861,10 @@ $(".actions").on("click", ".btn-stream", async function () {
   }
 });
 $("#btnRemoteAssistance").on("click", async function() {
-  $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
-  $("#overlayPleaseWait").fadeIn();
-  var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
+  const run = async () => {
+    $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
+    $("#overlayPleaseWait").fadeIn();
+    var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
   if (os.platform() == "darwin") {
     qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
   } else if (os.platform() == "linux") {
@@ -845,6 +890,8 @@ $("#btnRemoteAssistance").on("click", async function() {
   } finally {
     $(this).html(initialTriggerText).prop("disabled", false);
   }
+  };
+  await confirmIfNeeded("confirmRemoteAssistance", (prefs.labelRemoteAssistance || "Remote assistance").toLowerCase(), run);
 });
 $("#overlaySettings tr.onOffToggle").on("click", function() {
   $(this).find("input.optional-action-enabled").click();

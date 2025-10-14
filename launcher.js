@@ -68,45 +68,101 @@ function goAhead() {
         updateCleanup();
       } catch (err) {
         console.error(err, prefs);
-        toggleScreen("overlaySettings", true);
+        toggleScreen("overlaySettings", "show");
       }
     }
     prefsInitialize();
     processSettings();
     $("#version span.badge").html("v" + remote.app.getVersion());
     $("#overlayPleaseWait").fadeOut();
-    window.addEventListener("keyup", handleKeyPress, true);
+    // Initialize scoped keyboard shortcuts on first load
+    setShortcutScope("home");
     scheduleLoader();
   });
 }
 function isEscapeButton(event) {
-  return event.key === "Escape" || event.key === "Esc"
+  return event.key == "Escape" || event.key == "Esc"
 }
 function supportKey(event) {
-  return !(event.ctrlKey || event.metaKey || event.shiftKey) && (event.code.includes("Key") || isEscapeButton(event));
+  return !(event.ctrlKey || event.metaKey || event.shiftKey) && (event.code.includes("Key") || /^[a-z]$/i.test(event.key) || isEscapeButton(event));
 }
-function handleKeyPress (event) {
-  if (!supportKey(event) || $("#overlayPleaseWait").is(":visible")) {
-    return;
-  }
+// Centralized, scoped keyboard shortcuts
+let currentKeyHandler = null;
+let currentShortcutScope = null; // one of: 'home' | 'featured' | 'streaming' | 'player'
 
-  if ($("#home").is(":visible")) {
-    if (event.key.toLowerCase() == String.fromCharCode($(".links tbody tr").filter(function() {
-      return $(this).find(".linkName").val() !== "";
-    }).length + 65).toLowerCase()) {
-      $("#broadcast1button").click();
-    } else {
-      $(".actions .buttonContainer button").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
-    }
-  } else if ($("#closeButton").is(":visible") && (event.key.toLowerCase() == "x" || isEscapeButton(event))) {
-    $("#closeButton").click();
-  } else if ($(".go-home").is(":visible") && isEscapeButton(event)) {
-    $("#btnGoHome").click();
-  } else if ($(".featuredVideos").is(":visible") && !$("#closeButton").is(":visible")) {
-    $(".featuredVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
-  } else if ($(".streamingVideos").is(":visible") && $("#closeButton").is(":not(:visible)")) {
-    $(".streamingVideos > div > div").eq(event.key.toLowerCase().charCodeAt(0) - 97).click();
+function unregisterShortcuts() {
+  if (currentKeyHandler) {
+    window.removeEventListener("keyup", currentKeyHandler, true);
+    currentKeyHandler = null;
   }
+}
+
+function setShortcutScope(scope) {
+  unregisterShortcuts();
+  currentShortcutScope = scope;
+  currentKeyHandler = function(event) {
+    if (!supportKey(event) || $("#overlayPleaseWait").is(":visible")) return;
+    // If any overlay other than videos/video player is visible, ignore shortcuts
+    if ($(".overlay:visible").not("#videos, #videoPlayer").length > 0) return;
+    const key = isEscapeButton(event) ? "escape" : String(event.key || "").toLowerCase();
+
+    switch (currentShortcutScope) {
+      case "home": {
+        if (key === "escape") return; // nothing to do
+        const linksCount = $(".links tbody tr").filter(function() { return $(this).find(".linkName").val() !== ""; }).length;
+        const broadcastKey = String.fromCharCode(linksCount + 65).toLowerCase();
+        if (key === broadcastKey) {
+          event.preventDefault();
+          $("#broadcast1button").click();
+        } else {
+          const idx = key.charCodeAt(0) - 97;
+          if (idx >= 0) {
+            event.preventDefault();
+            $(".actions .buttonContainer button").eq(idx).click();
+          }
+        }
+        break;
+      }
+      case "featured": {
+        if (key === "escape") {
+          event.preventDefault();
+          $("#btnGoHome").click();
+          return;
+        }
+        if (!$("#closeButton").is(":visible")) {
+          const idx = key.charCodeAt(0) - 97;
+          if (idx >= 0) {
+            event.preventDefault();
+            $(".featuredVideos > div > div").eq(idx).click();
+          }
+        }
+        break;
+      }
+      case "streaming": {
+        if (key === "escape") {
+          event.preventDefault();
+          $("#btnGoHome2").click();
+          return;
+        }
+        if (!$("#closeButton").is(":visible")) {
+          const idx = key.charCodeAt(0) - 97;
+          if (idx >= 0) {
+            event.preventDefault();
+            $(".streamingVideos > div > div").eq(idx).click();
+          }
+        }
+        break;
+      }
+      case "player": {
+        if (key === "x" || key === "escape") {
+          event.preventDefault();
+          $("#closeButton").click();
+        }
+        break;
+      }
+    }
+  };
+  window.addEventListener("keyup", currentKeyHandler, true);
 }
 function isReachable(hostname, port) {
   return new Promise(resolve => {
@@ -219,13 +275,15 @@ async function broadcastLoad() {
   var videos = 0;
   if (prefs.broadcastLang) {
     let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
+    console.log("Broadcast response: ", req);
     broadcastStrings = req.translations[prefs.broadcastLang];
-    $("#broadcast1button").css("background-color", colors[($(".links tbody tr").filter(function() {
+    $("#broadcast1button").css("background-color", colors[$($(".links tbody tr").filter(function() {
       return $(this).find(".linkName").val() !== "";
     }).length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").filter(function() {
       return $(this).find(".linkName").val() !== "";
     }).length + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + broadcastStrings.ttlHome + "</div>");
     $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
+    $("#lblGoHome2").html(broadcastStrings.btnStillWatchingGoBack);
     try {
       var studioFeatured = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www")).category.media;
       var latestVideos = (await getJson("https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/LatestVideos?detailed=0&clientType=www")).category.media;
@@ -237,6 +295,7 @@ async function broadcastLoad() {
         var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "' style='display: flex;'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-column flex-fill m-2' style='display: flex;'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
           $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
           $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
+          setShortcutScope("player");
         });
         $(".featuredVideos").append(featuredVideoElement);
       }
@@ -384,12 +443,12 @@ function scheduleLoader() {
   }
   setTimeout(scheduleLoader, 15000);
 }
-function toggleScreen(screen, forceShow, forceHide) {
+function toggleScreen(screen, action = "") {
   var visible = $("#" + screen).is(":visible");
-  if (forceShow) {
+  if (action == "show") {
     $("#" + screen).fadeIn("fast");
     $("#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : "")).hide();
-  } else if (forceHide || visible) {
+  } else if (action == "hide" || visible) {
     $("#home").show();
     $("#" + screen).fadeOut("fast");
   } else {
@@ -415,7 +474,7 @@ function validateSettings() {
   $(".btnSettings").prop("disabled", !configIsValid).toggleClass("btn-danger", !configIsValid).toggleClass("btn-secondary", configIsValid);
   $("#settingsIcon").toggleClass("text-danger", !configIsValid).toggleClass("text-muted", configIsValid);
   if (configIsValid) generateButtons();
-  if (!configIsValid) toggleScreen("overlaySettings", true);
+  if (!configIsValid) toggleScreen("overlaySettings", "show");
   return configIsValid;
 }
 $(".btnSettings, #btnSettings").on("click", function() {
@@ -465,19 +524,31 @@ $("#btnExport").on("click", function() {
 });
 $("#closeButton").on("click", function() {
   $("#videoPlayer").fadeOut().find("video").remove();
+  // Return to the appropriate shortcuts scope after closing player
+  if ($("#videos").is(":visible")) {
+    if ($(".streamingVideos").first().parent().is(":visible")) {
+      setShortcutScope("streaming");
+    } else if ($(".featuredVideos").first().parent().is(":visible")) {
+      setShortcutScope("featured");
+    }
+  } else if ($("#home").is(":visible")) {
+    setShortcutScope("home");
+  }
 });
 $("#broadcast1button").on("click", function() {
+  toggleScreen("videos", "show");
   $("#videos>div").show();
   $(".streamingVideos").first().parent().hide();
   $("#videoPlayer").hide();
-  toggleScreen("videos");
+  setShortcutScope("featured");
 });
 $("#btnGoHome, #btnGoHome2").on("click", function() {
-  toggleScreen("videos");
+  toggleScreen("videos", "hide");
+  setShortcutScope("home");
 });
 $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async function() {
   try {
-    toggleScreen("overlayPleaseWait");
+    toggleScreen("overlayPleaseWait", "show");
     const guid = $(this).data("guid");
     const specialtyGuid = $(this).data("specialty");
     const url = $(this).data("playurl") || $(this).data("url");
@@ -517,12 +588,13 @@ $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async functio
         const signedUrl = (presigned && presigned.data && (presigned.data.presignedUrl || presigned.data.url)) ? (presigned.data.presignedUrl || presigned.data.url) : mp4Url;
         console.log("Signed URL: ", signedUrl);
         $("#videoPlayer").append("<video controls autoplay><source src='" + signedUrl + "' / ></video>").fadeIn();
+        setShortcutScope("player");
       }
     }
   } catch (e) {
     console.error(e);
   } finally {
-    toggleScreen("overlayPleaseWait");
+    toggleScreen("overlayPleaseWait", "hide");
   }
 });
 $(".actions").on("click", ".btn-zoom", function () {
@@ -541,10 +613,12 @@ $(".actions").on("click", ".btn-zoom", function () {
   $("#overlayPleaseWait").fadeIn().delay(15000).fadeOut();
 });
 $(".actions").on("click", ".btn-stream", async function () {
-  toggleScreen("overlayPleaseWait");
+  // Ensure we are in the videos overlay (streaming list view)
+  $("#videos>div").hide();
+  $(".streamingVideos").first().parent().show();
+  toggleScreen("videos", "hide");
+  toggleScreen("overlayPleaseWait", "show");
   try {
-    $("#videos>div").hide();
-    $(".streamingVideos").first().parent().show();
     $(".streamingVideos > div:not(:first)").remove();
     let linkTokenRaw = decodeURIComponent($(this).data("link-details").split(",")[0]);
     let linkToken = linkTokenRaw.split("/").slice(-1)[0];
@@ -648,16 +722,35 @@ $(".actions").on("click", ".btn-stream", async function () {
       const specialtyGuid = (it.playUrl && it.playUrl.specialtyGuid) || it.specialtyGuid || "";
       const audioUrl = (it.playUrl && it.playUrl.audioUrl) || "";
       const quality = (it.playUrl && it.playUrl.quality) || "undefined";
-      $(".streamingVideos").append("<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded bg-light p-2 text-dark' data-url='" + playUrl + "' data-playurl='" + playUrl + "' data-guid='" + guid + "' data-specialty='" + specialtyGuid + "' data-audiourl='" + audioUrl + "' data-quality='" + quality + "' style='display: flex;'><div class='flex-row'><h5><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><img src='" + thumb + "' style='height:64px;width:auto;margin-right:8px'/>" + "<div><h5>" + desc + "</h5>" + (pub ? ("<div>" + pub + "</div>") : "") + "</div></div></div>");
+      $(".streamingVideos").append(
+        "<div class='mt-0 pt-2'>" +
+          "<div class='flex-column flex-fill h-100 rounded bg-light text-dark' " +
+            "data-url='" + playUrl + "' " +
+            "data-playurl='" + playUrl + "' " +
+            "data-guid='" + guid + "' " +
+            "data-specialty='" + specialtyGuid + "' " +
+            "data-audiourl='" + audioUrl + "' " +
+            "data-quality='" + quality + "' " +
+            "style='display: flex;'>" +
+              "<div class='thumb-16x9'><img src='" + thumb + "'/></div>" +
+              "<div class='flex-column flex-fill m-2' style='display: flex;'>" +
+                "<div><h5 class='kbd'><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div>" +
+                "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + desc + "</h5></div>" +
+                (pub ? ("<div><h6>" + pub + "</h6></div>") : "") +
+              "</div>" +
+          "</div>" +
+        "</div>"
+      );
       added++;
     }
     $(".streamingVideos > div").css("height", 100 / Math.ceil($(".streamingVideos > div").length / 4) + "%");
     scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");
+    setShortcutScope("streaming");
   } catch(err) {
     let badLink = $(this).data("link-details");
     $(".streamUrl").filter(function() { return $(this).val() ===  badLink; }).addClass("is-invalid");
-    toggleScreen("overlaySettings", true);
+    toggleScreen("overlaySettings", "show");
     console.error(err);
   }
 });

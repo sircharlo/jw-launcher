@@ -152,7 +152,12 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find(".linkName").val("").toggle(!!linkType);
   if (linkType === "zoom") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>ID</span><input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><span class='input-group-text'>Password</span><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' /></div>");
-    thisRow.find(".zoomId").inputmask(["999 999 999[9]", "999 9999 9999"], { "clearIncomplete": true });
+    thisRow.find(".zoomId").inputmask([
+      "999 999 999",
+      "999 999 9999",
+      "999 999 9999 9",
+      "999 999 9999 99"
+    ], { "clearIncomplete": true });
   } else if (linkType === "stream") {
     thisRow.find(".linkDetails").append("<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>");
   }

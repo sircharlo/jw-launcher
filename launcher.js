@@ -893,12 +893,6 @@ $("#btnRemoteAssistance").on("click", async function() {
   };
   await confirmIfNeeded("confirmRemoteAssistance", (prefs.labelRemoteAssistance || "Remote assistance").toLowerCase(), run);
 });
-$("#overlaySettings tr.onOffToggle").on("click", function() {
-  $(this).find("input.optional-action-enabled").click();
-});
-$("#overlaySettings tr.onOffToggle input.optional-action-enabled").click(function(e) {
-  e.stopPropagation();
-});
 $(document).on("select2:open", () => {
   document.querySelector(".select2-search__field").focus();
 });

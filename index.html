@@ -67,6 +67,16 @@
       justify-content: end;
     }
 
+    /* Cursor feedback for settings toggles */
+    #overlaySettings .form-check-input:not(:disabled),
+    #overlaySettings .form-check-input:not(:disabled) + .form-check-label {
+      cursor: pointer;
+    }
+    #overlaySettings .form-check-input:disabled,
+    #overlaySettings .form-check-input:disabled + .form-check-label {
+      cursor: not-allowed;
+    }
+
     span.select2.is-invalid .select2-selection__arrow {
       right: 25px !important;
     }

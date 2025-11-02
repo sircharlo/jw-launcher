@@ -1,6 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require("electron"),
   { autoUpdater } = require("electron-updater"),
-  os = require("os"),
   remote = require("@electron/remote/main");
 var win = {};
 const cookieJar = new Map();
@@ -105,7 +104,7 @@ if (!gotTheLock) {
     win.webContents.send("goAhead");
   });
   autoUpdater.on("update-available", () => {
-    if (os.platform() == "darwin") {
+    if (process.platform == "darwin") {
       win.webContents.send("goAhead");
       win.webContents.send("macUpdate");
     } else {

@@ -2,7 +2,6 @@ const axios = require('axios').default
 const net = require("net")
 const remote = require("@electron/remote")
 const fs = require("graceful-fs")
-const os = require("os")
 const path = require("path")
 const powerControl = require("power-control")
 const { shell } = require("electron")
@@ -822,9 +821,9 @@ $("#btnRemoteAssistance").on("click", async function () {
     $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
     $("#overlayPleaseWait").fadeIn();
     var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
-    if (os.platform() == "darwin") {
+    if (process.platform == "darwin") {
       qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
-    } else if (os.platform() == "linux") {
+    } else if (process.platform == "linux") {
       qsUrl = "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz";
     }
     var initialTriggerText = $(this).html();

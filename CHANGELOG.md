@@ -1,5 +1,15 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+
+## v25.11.1
+
+Release date: 2025-11-02
+
+### Fixes
+
+- **Dependencies**: Fixed missing dependency that prevented app from starting.
+
 ## v25.11.0
 
 Release date: 2025-11-01

@@ -5,17 +5,18 @@ const axios = require('axios').default,
   os = require("os"),
   path = require("path"),
   powerControl = require("power-control"),
-  {shell} = require("electron"),
+  { shell } = require("electron"),
   $ = require("jquery");
-const appPath = remote.app.getPath("userData"),
-  //          green      pink       blue     deeporange   purple     yellow      cyan      brown
-  colors = ["#00e676", "#ff80ab", "#64b5f6", "#ffb74d", "#ea80fc", "#ffff8d", "#18ffff", "#bcaaa4"],
+const appPath = remote.app.getPath("userData")
+const { openExternal } = shell;
+//          green        pink         blue         deeporange   purple       yellow        cyan        brown
+colors = ["#00e676", "#ff80ab", "#64b5f6", "#ffb74d", "#ea80fc", "#ffff8d", "#18ffff", "#bcaaa4"],
   prefsFile = path.join(appPath, "prefs.json");
 var scheduledActionInfo = {},
   broadcastStrings = {},
   prefs = {},
   streamAuth = {};
-  
+
 // Map of action key -> jQuery button selector for advanced actions (Shutdown/Remote/Settings/Close)
 let actionShortcutMap = new Map();
 
@@ -47,8 +48,8 @@ require("electron").ipcRenderer.on("updateDownloadProgress", (event, message) =>
   $("#updatePercent i:nth-of-type(" + dotsDone + ")").addClass("fa-circle text-primary").removeClass("fa-dot-circle");
 });
 require("electron").ipcRenderer.on("macUpdate", () => {
-  $("#btn-mac-update").click(function() {
-    shell.openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
+  $("#btn-mac-update").click(function () {
+    openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
   }).parent().fadeIn();
 });
 require("electron").ipcRenderer.on("goAhead", () => {
@@ -57,15 +58,15 @@ require("electron").ipcRenderer.on("goAhead", () => {
     goAhead();
   });
 });
-$(".links tbody").on("change", "input, select", function() {
-  $(".links tbody input:visible, .links tbody select:visible").removeClass("is-invalid").filter(function() {
+$(".links tbody").on("change", "input, select", function () {
+  $(".links tbody input:visible, .links tbody select:visible").removeClass("is-invalid").filter(function () {
     return !this.value;
   }).addClass("is-invalid");
   $(this).closest("tr").find(".btn-delete-link").toggle($(this).closest("tr").find(".linkType").val() !== "");
   updateScheduleTargets();
 });
 function goAhead() {
-  languageRefresh().then(function() {
+  languageRefresh().then(function () {
     if (fs.existsSync(prefsFile)) {
       try {
         prefs = JSON.parse(fs.readFileSync(prefsFile));
@@ -104,7 +105,7 @@ function unregisterShortcuts() {
 function setShortcutScope(scope) {
   unregisterShortcuts();
   currentShortcutScope = scope;
-  currentKeyHandler = function(event) {
+  currentKeyHandler = function (event) {
     if (!supportKey(event) || $("#overlayPleaseWait").is(":visible")) return;
     // If any overlay other than videos/video player is visible, ignore shortcuts
     if ($(".overlay:visible").not("#videos, #videoPlayer").length > 0) return;
@@ -117,10 +118,10 @@ function setShortcutScope(scope) {
         if (actionShortcutMap.has(key)) {
           event.preventDefault();
           const sel = actionShortcutMap.get(key);
-          try { $(sel).click(); } catch(_) {}
+          try { $(sel).click(); } catch (_) { }
           return;
         }
-        const linksCount = $(".links tbody tr").filter(function() { return $(this).find(".linkName").val() !== ""; }).length;
+        const linksCount = $(".links tbody tr").filter(function () { return $(this).find(".linkName").val() !== ""; }).length;
         const broadcastKey = String.fromCharCode(linksCount + 65).toLowerCase();
         if (key === broadcastKey) {
           event.preventDefault();
@@ -183,37 +184,44 @@ function isReachable(hostname, port) {
       client.on("timeout", () => {
         client.destroy("Timeout: " + hostname + ":" + port);
       });
-      client.on("connect", function() {
+      client.on("connect", function () {
         client.destroy();
         resolve(true);
       });
-      client.on("error", function(e) {
+      client.on("error", function (e) {
         console.error(e);
         resolve(false);
       });
-    } catch(err) {
+    } catch (err) {
       resolve(false);
     }
   });
 }
-$("#overlaySettings tbody").on("click", ".btn-delete", function() {
+$("#overlaySettings tbody").on("click", ".btn-delete", function () {
   let parentTable = $(this).closest("tbody");
   $(this).closest("tr").remove();
   parentTable.find("tr").last().find("input").first().change();
 });
-$(".links tbody").on("change", ".streamUrl", function() {
-  $(this).val($(this).val().replace("https://fle.stream.jw.org/", ""));
+$(".links tbody").on("change", ".streamUrl", function () {
+  let val = $(this).val();
+  // If it's a full URL starting with https://, extract the last part after the last /
+  if (val.startsWith("https://")) {
+    val = val.split("/").pop();
+  }
+  // Also remove any existing prefix like https://fle.stream.jw.org/
+  val = val.replace("https://fle.stream.jw.org/", "");
+  $(this).val(val);
 });
-$(".links tbody").on("change", ".linkName, .linkDetails input", function() {
+$(".links tbody").on("change", ".linkName, .linkDetails input", function () {
   let linkArray = [];
   $(".links tbody tr").each(function () {
     if ($(this).find(".linkType").val().length > 0) {
       linkArray.push($(this).find(".linkType, .linkName, .linkDetails input").map(function () { return $(this).val(); }).get());
     }
   });
-  if ($(".links tbody tr .is-invalid:visible").length ===0) $("#linkArray").val(JSON.stringify(linkArray)).change();
+  if ($(".links tbody tr .is-invalid:visible").length === 0) $("#linkArray").val(JSON.stringify(linkArray)).change();
 });
-$(".links tbody").on("change", ".linkType", function() {
+$(".links tbody").on("change", ".linkType", function () {
   let linkType = $(this).val();
   let thisRow = $(this).closest("tr");
   thisRow.find(".linkDetails").empty();
@@ -232,15 +240,15 @@ $(".links tbody").on("change", ".linkType", function() {
   thisRow.find("input").addClass("is-invalid");
   if (!$(this).hasClass("initializing")) validateSettings();
 });
-$(".schedule tbody").on("change", "input, select", function() {
-  $(".schedule tbody input, .schedule tbody select").removeClass("is-invalid").filter(function() {
+$(".schedule tbody").on("change", "input, select", function () {
+  $(".schedule tbody input, .schedule tbody select").removeClass("is-invalid").filter(function () {
     return !this.value;
   }).addClass("is-invalid");
   let scheduleArray = [];
   $(".schedule tbody tr").each(function () {
     scheduleArray.push($(this).find("input, select").map(function () { return $(this).val(); }).get());
   });
-  if ($(".schedule tbody tr .is-invalid:visible").length ===0) {
+  if ($(".schedule tbody tr .is-invalid:visible").length === 0) {
     $("#scheduleArray").val(JSON.stringify(scheduleArray)).change();
   } else {
     validateSettings();
@@ -267,14 +275,14 @@ function addNewSchedule() {
   updateScheduleTargets();
 }
 function updateScheduleTargets() {
-  $(".schedule select.targetAction").each(function() {
+  $(".schedule select.targetAction").each(function () {
     let sel = $(this);
-    let links = $(".links tbody tr").filter(function() {
+    let links = $(".links tbody tr").filter(function () {
       return $(this).find(".linkName").val() !== "";
     });
     sel.find("option").slice(links.length + 1).remove();
     sel.change();
-    links.each(function(index) {
+    links.each(function (index) {
       if (sel.find("option[value=" + index + "]").length === 0) sel.append($("<option>", {
         value: index
       }));
@@ -288,9 +296,9 @@ async function broadcastLoad() {
     let req = await getJson("https://b.jw-cdn.org/apis/mediator/v1/translations/" + prefs.broadcastLang);
     console.log("Broadcast response: ", req);
     broadcastStrings = req.translations[prefs.broadcastLang];
-    $("#broadcast1button").css("background-color", colors[$($(".links tbody tr").filter(function() {
+    $("#broadcast1button").css("background-color", colors[$($(".links tbody tr").filter(function () {
       return $(this).find(".linkName").val() !== "";
-    }).length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").filter(function() {
+    }).length % colors.length)]).html("<div><kbd>" + String.fromCharCode($(".links tbody tr").filter(function () {
       return $(this).find(".linkName").val() !== "";
     }).length + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + broadcastStrings.ttlHome + "</div>");
     $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
@@ -303,7 +311,7 @@ async function broadcastLoad() {
       $(".featuredVideos > div:not(:first)").remove();
       for (var featuredVideo of allVideos) {
         videos++;
-        var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "' style='display: flex;'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-column flex-fill m-2' style='display: flex;'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function() {
+        var featuredVideoElement = $("<div class='mt-0 pt-2'><div class='bg-light flex-column h-100 rounded text-dark' data-url='" + featuredVideo.files.slice(-1)[0].progressiveDownloadURL + "' style='display: flex;'><div class='row'><img style='width: 100%' src='" + featuredVideo.images.pnr.lg + "'/></div><div class='flex-column flex-fill m-2' style='display: flex;'><div><h5 class='kbd'><kbd>" + String.fromCharCode(65 + videos) + "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + featuredVideo.title + "</h5></div></div></div></div>").click(function () {
           $("#videoPlayer").append("<video controls autoplay></video>").fadeIn();
           $("#videoPlayer video").append("<source src='" + $(this).find("div").data("url") + "' / >");
           setShortcutScope("player");
@@ -311,7 +319,7 @@ async function broadcastLoad() {
         $(".featuredVideos").append(featuredVideoElement);
       }
       $(".featuredVideos > div").css("height", 100 / Math.ceil($(".featuredVideos > div").length / 5) + "%");
-    } catch(err) {
+    } catch (err) {
       console.error("[ERROR] https://b.jw-cdn.org/apis/mediator/v1/categories/" + prefs.broadcastLang + "/StudioFeatured?detailed=0&clientType=www");
     }
     $("#broadcast1button").parent().toggle(videos > 0);
@@ -319,9 +327,9 @@ async function broadcastLoad() {
   return videos;
 }
 function buttonHeight(broadcastVideos) {
-  let links = $(".links tbody tr").filter(function() {
-      return $(this).find(".linkName").val() !== "";
-    }).length,
+  let links = $(".links tbody tr").filter(function () {
+    return $(this).find(".linkName").val() !== "";
+  }).length,
     broadcast = (broadcastVideos > 0 ? 1 : 0);
   $(".actions > div").css("height", 100 / Math.ceil((broadcast + links) / 3) + "%");
 }
@@ -329,7 +337,7 @@ async function downloadFile(url, progressElem) {
   try {
     let response = await axios.get(url, {
       responseType: "arraybuffer",
-      onDownloadProgress: function(progressEvent) {
+      onDownloadProgress: function (progressEvent) {
         var percent = progressEvent.loaded / progressEvent.total * 100;
         progressElem.css("width", percent + "%");
       }
@@ -342,24 +350,22 @@ async function downloadFile(url, progressElem) {
 }
 function generateButtons() {
   $(".actions .buttonContainer").remove();
-  let links = $(".links tbody tr").filter(function() {
+  let links = $(".links tbody tr").filter(function () {
     return $(this).find(".linkName").val() !== "";
   });
-  for (let link = 0; link <links.length; link++) {
+  for (let link = 0; link < links.length; link++) {
     $(".actions").append("<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" + $(links[link]).find(".linkType").val() + " flex-column h-100 w-100' style='display: flex; background-color: " + colors[(link % colors.length)] + "' data-link-details='" + $(links[link]).find(".linkDetails input").map(function () { return $(this).val(); }).get() + "'><div><kbd>" + String.fromCharCode(link + 65) + "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" + $(links[link]).find(".linkName").val() + "</div></button></div>");
   }
   $(".actions").append($(".actions > .broadcastContainer"));
 }
 async function getJson(url) {
-  let response = null,
-    payload = null;
   try {
-    payload = await axios.get(url);
-    response = payload.data;
+    const response = await axios.get(url);
+    return response.data;
   } catch (err) {
-    console.error(url, err, payload);
+    console.error(url, err);
+    return null;
   }
-  return response;
 }
 function prefsInitialize() {
   for (var pref of [
@@ -455,7 +461,7 @@ function processSettings() {
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
-  broadcastLoad().then(function(broadcastVideos) {
+  broadcastLoad().then(function (broadcastVideos) {
     for (var setting of ["broadcastLang", "username"]) {
       $("#" + setting).toggleClass("is-invalid", !prefs[setting]).next("span.select2").toggleClass("is-invalid", !prefs[setting]);
     }
@@ -482,7 +488,7 @@ function updateActionShortcuts() {
 }
 function renderActionShortcutBadges() {
   // Clear existing badges
-  $("#kbdShutdown, #kbdRemoteAssistance, #kbdSettings, #kbdClose").each(function(){ $(this).html("").hide(); });
+  $("#kbdShutdown, #kbdRemoteAssistance, #kbdSettings, #kbdClose").each(function () { $(this).html("").hide(); });
   // Helper to find key by selector
   const getKeyForSelector = (sel) => {
     for (const [k, v] of actionShortcutMap.entries()) if (v === sel) return k;
@@ -502,7 +508,7 @@ function renderActionShortcutBadges() {
 function scheduleLoader() {
   let d = new Date();
   let schedules = [];
-  $(".schedule tbody tr").filter(function() {
+  $(".schedule tbody tr").filter(function () {
     return $(this).find(".is-invalid").length === 0;
   }).each(function () {
     let scheduledItem = {};
@@ -520,15 +526,15 @@ function scheduleLoader() {
           let targetDate = new Date(d);
           targetDate.setHours(triggerTime[0], triggerTime[1], 0, 0);
           let timeToEvent = (targetDate - d) / 1000 / 60;
-          if (timeToEvent >=-105 && timeToEvent <= 30) {
+          if (timeToEvent >= -105 && timeToEvent <= 30) {
             console.log("[SCHEDULE] Triggering scheduled item, as we are within the acceptable timeframe");
             $("#actionDesc").text($(".schedule tbody tr .targetAction").eq(s).find("option:selected").text());
-            $("#overlayScheduledAction").stop().fadeIn().delay(10000).fadeOut(400, function() {
+            $("#overlayScheduledAction").stop().fadeIn().delay(10000).fadeOut(400, function () {
               if (!scheduledActionInfo.lastSkip || (d - scheduledActionInfo.lastSkip) / 1000 / 60 / 60 > 12) $(".actions button").eq(schedule.targetAction).click();
             });
             let timeLeft = 10;
-            let downloadTimer = setInterval(function(){
-              if(timeLeft <= 0) clearInterval(downloadTimer);
+            let downloadTimer = setInterval(function () {
+              if (timeLeft <= 0) clearInterval(downloadTimer);
               $("#scheduledDelayProgress .progress-bar").css("width", (10 - timeLeft + 1) * 10 + "%");
               timeLeft -= 1;
             }, 1000);
@@ -560,7 +566,7 @@ function updateCleanup() {
         delete prefs["hide" + oldHidePref];
       }
     }
-    fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
+    fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({ ...acc, [key]: prefs[key] }), {}), null, 2));
   } catch (err) {
     console.error(err);
   }
@@ -573,14 +579,14 @@ function validateSettings() {
   if (!configIsValid) toggleScreen("overlaySettings", "show");
   return configIsValid;
 }
-$(".btnSettings, #btnSettings").on("click", function() {
+$(".btnSettings, #btnSettings").on("click", function () {
   toggleScreen("overlaySettings");
 });
-$("#overlayScheduledAction button").on("click", function() {
+$("#overlayScheduledAction button").on("click", function () {
   $("#overlayScheduledAction").stop().fadeOut;
   scheduledActionInfo.lastSkip = new Date();
 });
-$("#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)").on("change", function() {
+$("#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)").on("change", function () {
   if ($(this).prop("tagName") == "INPUT") {
     if ($(this).prop("type") == "checkbox") {
       prefs[$(this).prop("id")] = $(this).prop("checked");
@@ -592,43 +598,43 @@ $("#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dyna
   } else if ($(this).prop("tagName") == "SELECT") {
     prefs[$(this).prop("id")] = $(this).find("option:selected").val();
   }
-  fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({...acc, [key]: prefs[key]}), {}), null, 2));
+  fs.writeFileSync(prefsFile, JSON.stringify(Object.keys(prefs).sort().reduce((acc, key) => ({ ...acc, [key]: prefs[key] }), {}), null, 2));
   processSettings();
 });
-$("#autoRunAtBoot").on("change", function() {
+$("#autoRunAtBoot").on("change", function () {
   remote.app.setLoginItemSettings({
     openAtLogin: prefs.autoRunAtBoot
   });
 });
-$("#broadcastLang").on("change", function() {
+$("#broadcastLang").on("change", function () {
   $(".featuredVideos > div:not(:first-of-type)").remove();
 });
-$("#btnShutdown").on("click", function() {
+$("#btnShutdown").on("click", function () {
   confirmIfNeeded("confirmShutdown", (prefs.labelShutdown || "Shutdown").toLowerCase(), () => {
     powerControl.powerOff();
   });
 });
-$("#btnClose").on("click", function() {
+$("#btnClose").on("click", function () {
   confirmIfNeeded("confirmClose", (prefs.labelClose || "Close").toLowerCase(), () => {
     try { remote.app.quit(); } catch (e) { console.error(e); }
   });
 });
-$(".btn-add-link").on("click", function() {
+$(".btn-add-link").on("click", function () {
   addNewLink();
 });
-$(".btn-add-schedule").on("click", function() {
+$(".btn-add-schedule").on("click", function () {
   addNewSchedule();
   validateSettings();
 });
-$("#btnExport").on("click", function() {
+$("#btnExport").on("click", function () {
   const outPath = remote.dialog.showSaveDialogSync({
-    defaultPath : "prefs.json"
+    defaultPath: "prefs.json"
   });
   if (outPath) {
     fs.writeFileSync(outPath, JSON.stringify(prefs, null, 2));
   }
 });
-$("#closeButton").on("click", function() {
+$("#closeButton").on("click", function () {
   $("#videoPlayer").fadeOut().find("video").remove();
   // Return to the appropriate shortcuts scope after closing player
   if ($("#videos").is(":visible")) {
@@ -641,18 +647,18 @@ $("#closeButton").on("click", function() {
     setShortcutScope("home");
   }
 });
-$("#broadcast1button").on("click", function() {
+$("#broadcast1button").on("click", function () {
   toggleScreen("videos", "show");
   $("#videos>div").show();
   $(".streamingVideos").first().parent().hide();
   $("#videoPlayer").hide();
   setShortcutScope("featured");
 });
-$("#btnGoHome, #btnGoHome2").on("click", function() {
+$("#btnGoHome, #btnGoHome2").on("click", function () {
   toggleScreen("videos", "hide");
   setShortcutScope("home");
 });
-$(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async function() {
+$(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async function () {
   try {
     toggleScreen("overlayPleaseWait", "show");
     const guid = $(this).data("guid");
@@ -660,17 +666,8 @@ $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async functio
     const url = $(this).data("playurl") || $(this).data("url");
     const audioUrl = $(this).data("audiourl") || "";
     const quality = $(this).data("quality") || "undefined";
-    const client = axios.create({ baseURL: "https://stream.jw.org", withCredentials: true });
-    let headers = {
-      "accept": "application/json",
-      "content-type": "application/json",
-      "oidc-domain": "jworg",
-      "xsrf-token-stream": streamAuth.xsrfToken || "",
-      Cookie: streamAuth.cookieHeader || "",
-      Referer: "https://stream.jw.org/home?playerOpen=true"
-    };
-    await client.put("/api/v1/libraryBranch/program/presignURL", { guid, specialtyGuid, url, audioUrl, programUrlType: "video", quality, size: 0, legacyQuality: "", programType: "vod", isHome: true, isAudioOnly: false }, { headers });
-    const detail = await client.get(`/api/v1/program/getByGuidForHome/vod/${guid}`, { headers: { ...headers, "content-type": undefined } });
+    await axios.put('https://stream.jw.org/api/v1/libraryBranch/program/presignURL', { guid, specialtyGuid, url, audioUrl, programUrlType: "video", quality, size: 0, legacyQuality: "", programType: "vod", isHome: true, isAudioOnly: false }, { headers: { "X-Referer": "https://stream.jw.org/home?playerOpen=true" } });
+    const detail = await axios.get(`https://stream.jw.org/api/v1/program/getByGuidForHome/vod/${guid}`, { headers: { "content-type": undefined } });
     if (detail && detail.data && Array.isArray(detail.data.downloadUrls)) {
       const dls = detail.data.downloadUrls;
       const preferred = dls.find(d => d.quality === "720") || dls.find(d => d.quality === "540") || dls.find(d => d.quality === "360") || dls[0];
@@ -689,8 +686,8 @@ $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async functio
           category_categoryType: detail.data.category_categoryType,
           category_guid: detail.data.category_guid
         };
-        const presigned = await client.put("/api/v1/libraryBranch/program/presignURL", presignBody, { headers });
-        console.log("Presigned response: ", presigned);
+        const presigned = await axios.put('https://stream.jw.org/api/v1/libraryBranch/program/presignURL', presignBody);
+        console.log("PUT https://stream.jw.org/api/v1/libraryBranch/program/presignURL", presigned.status, presigned.data);
         const signedUrl = (presigned && presigned.data && (presigned.data.presignedUrl || presigned.data.url)) ? (presigned.data.presignedUrl || presigned.data.url) : mp4Url;
         console.log("Signed URL: ", signedUrl);
         $("#videoPlayer").append("<video controls autoplay><source src='" + signedUrl + "' / ></video>").fadeIn();
@@ -705,12 +702,12 @@ $(".streamingVideos").on("click", ".flex-column:not(.lblGoHome2)", async functio
 });
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
-  shell.openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0].replace(/\D+/g, "") + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
+  openExternal("zoommtg://zoom.us/join?confno=" + linkDetails[0].replace(/\D+/g, "") + "&pwd=" + linkDetails[1] + "&uname=" + prefs.username);
   scheduledActionInfo.lastExecution = new Date();
   let timeLeft = 15;
-  let loadZoomTimer = setInterval(function(){
+  let loadZoomTimer = setInterval(function () {
     $("#loadingProgress .progress-bar").css("width", (15 - timeLeft + 1) * 100 / 15 + "%").closest("div.align-self-center").show();
-    if(timeLeft <= 0) {
+    if (timeLeft <= 0) {
       clearInterval(loadZoomTimer);
       $("#loadingProgress .progress-bar").css("width", "0%").closest("div.align-self-center").hide();
     }
@@ -729,79 +726,35 @@ $(".actions").on("click", ".btn-stream", async function () {
     let linkTokenRaw = decodeURIComponent($(this).data("link-details").split(",")[0]);
     let linkToken = linkTokenRaw.split("/").slice(-1)[0];
     console.log("Creating axios client for link token: ", linkToken);
-    const client = axios.create({
-      baseURL: "https://stream.jw.org",
-      withCredentials: true,
-      xsrfCookieName: "xsrf-token-stream",
-      xsrfHeaderName: "xsrf-token-stream",
-      headers: {
-        "accept": "application/json",
-        "x-requested-with": "XMLHttpRequest"
-      }
-    });
-    console.log("Created axios client for link token: ", linkToken, client);
-    const loginRes = await client.post("/api/v1/auth/login/share", { token: linkToken }, { headers: { Referer: `https://stream.jw.org/${linkToken}` } });
-    console.log("Login response: ", loginRes);
-    const cookieJar = new Map();
-    const setFrom = (res) => {
-      let sc = res && res.headers ? res.headers["set-cookie"] : null;
-      if (!sc) return;
-      for (const c of sc) {
-        const parts = c.split(";").map(s => s.trim());
-        const pair = parts[0];
-        const eq = pair.indexOf("=");
-        if (eq > 0) cookieJar.set(pair.substring(0, eq).trim(), pair.substring(eq + 1));
-        const maxAgeAttr = parts.find(p => /^Max-Age=/i.test(p));
-        if (maxAgeAttr) {
-          const maxAge = parseInt(maxAgeAttr.split("=")[1]);
-          if (!isNaN(maxAge)) {
-            const exp = Math.floor(Date.now() / 1000) + maxAge;
-            cookieJar.set("stream-session-expiry", String(exp));
-          }
-        }
-      }
-    };
-    setFrom(loginRes);
-    let xsrfToken = cookieJar.get("xsrf-token-stream");
-    let cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
-    const whoamiRes = await client.get("/api/v1/auth/whoami", { headers: { Referer: `https://stream.jw.org/${linkToken}`, "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
-    console.log("Whoami response: ", whoamiRes);
-    setFrom(whoamiRes);
-    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
-    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
-    const linkRes = await client.get(`/api/v1/libraryBranch/library/link/${linkToken}`, { headers: { Referer: `https://stream.jw.org/${linkToken}`, "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
-    console.log("Link response: ", linkRes);
-    setFrom(linkRes);
-    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
-    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
-    const categoriesRes = await client.get("/api/v1/libraryBranch/home/category", { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
-    console.log("Categories response: ", categoriesRes);
-    setFrom(categoriesRes);
-    xsrfToken = cookieJar.get("xsrf-token-stream") || xsrfToken;
-    cookieHeader = Array.from(cookieJar.entries()).map(e => e[0] + "=" + e[1]).join("; ");
+    const loginRes = await axios.post(`https://stream.jw.org/api/v1/auth/login/share`, { token: linkToken }, { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } });
+    console.log("POST https://stream.jw.org/api/v1/auth/login/share", loginRes.status, loginRes.data);
+    const whoamiRes = await axios.get(`https://stream.jw.org/api/v1/auth/whoami`, { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } });
+    console.log("GET https://stream.jw.org/api/v1/auth/whoami", whoamiRes.status, whoamiRes.data);
+    const linkRes = await axios.get(`https://stream.jw.org/api/v1/libraryBranch/library/link/${linkToken}`, { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } });
+    console.log(`GET https://stream.jw.org/api/v1/libraryBranch/library/link/${linkToken}`, linkRes.status, linkRes.data);
+    const categoriesRes = await axios.get(`https://stream.jw.org/api/v1/libraryBranch/home/category`);
+    console.log("GET https://stream.jw.org/api/v1/libraryBranch/home/category", categoriesRes.status, categoriesRes.data);
     const categoryList = Array.isArray(categoriesRes.data) ? categoriesRes.data : (categoriesRes.data && Array.isArray(categoriesRes.data.items) ? categoriesRes.data.items : []);
     const categoryType = (categoryList.find(x => x && x.categoryType) || {}).categoryType || "theocraticProgram";
-    const subCatsRes = await client.get(`/api/v1/libraryBranch/home/subCategory/${categoryType}`, { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
-    console.log("Subcategories response: ", subCatsRes);
-    streamAuth = { xsrfToken, cookieHeader };
+    const subCatsRes = await axios.get(`https://stream.jw.org/api/v1/libraryBranch/home/subCategory/${categoryType}`);
+    console.log(`GET https://stream.jw.org/api/v1/libraryBranch/home/subCategory/${categoryType}`, subCatsRes.status, subCatsRes.data);
     let specialtyIds = [];
     if (subCatsRes && subCatsRes.data) {
       if (Array.isArray(subCatsRes.data)) {
-        specialtyIds = subCatsRes.data.map(x => x.id).filter(Boolean);
+        specialtyIds = subCatsRes.data.flatMap(x => x.specialties.map(s => s.key).filter(Boolean));
       } else if (Array.isArray(subCatsRes.data.items)) {
-        specialtyIds = subCatsRes.data.items.map(x => x.id).filter(Boolean);
+        specialtyIds = subCatsRes.data.items.flatMap(x => x.specialties.map(s => s.key).filter(Boolean));
       }
     }
-    if (specialtyIds.length === 0) specialtyIds = ["49ef88c8-3212-49ef-a810-b26a60217d35"];
     let allPrograms = [];
     for (let i = 0; i < specialtyIds.length; i++) {
       $("#loadingProgress .progress-bar").css("width", ((i + 1) * 100) / specialtyIds.length + "%").closest("div.align-self-center").show();
       try {
         console.log("Fetching program for specialty ID: ", specialtyIds[i]);
-        const prog = await client.get(`/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`, { headers: { "oidc-domain": "jworg", Referer: "https://stream.jw.org/home", "xsrf-token-stream": xsrfToken, Cookie: cookieHeader } });
-        console.log("Program response: ", prog);
+        const prog = await axios.get(`https://stream.jw.org/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`);
+        console.log(`GET https://stream.jw.org/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`, prog.status, prog.data);
         if (prog && prog.data) allPrograms.push(prog.data);
-      } catch(e) { }
+      } catch (e) { }
     }
     $("#loadingProgress .progress-bar").css("width", "0%").closest("div.align-self-center").hide();
     let items = [];
@@ -830,21 +783,21 @@ $(".actions").on("click", ".btn-stream", async function () {
       const quality = (it.playUrl && it.playUrl.quality) || "undefined";
       $(".streamingVideos").append(
         "<div class='mt-0 pt-2'>" +
-          "<div class='flex-column flex-fill h-100 rounded bg-light text-dark' " +
-            "data-url='" + playUrl + "' " +
-            "data-playurl='" + playUrl + "' " +
-            "data-guid='" + guid + "' " +
-            "data-specialty='" + specialtyGuid + "' " +
-            "data-audiourl='" + audioUrl + "' " +
-            "data-quality='" + quality + "' " +
-            "style='display: flex;'>" +
-              "<div class='thumb-16x9'><img src='" + thumb + "'/></div>" +
-              "<div class='flex-column flex-fill m-2' style='display: flex;'>" +
-                "<div><h5 class='kbd'><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div>" +
-                "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + desc + "</h5></div>" +
-                (pub ? ("<div><h6>" + pub + "</h6></div>") : "") +
-              "</div>" +
-          "</div>" +
+        "<div class='flex-column flex-fill h-100 rounded bg-light text-dark' " +
+        "data-url='" + playUrl + "' " +
+        "data-playurl='" + playUrl + "' " +
+        "data-guid='" + guid + "' " +
+        "data-specialty='" + specialtyGuid + "' " +
+        "data-audiourl='" + audioUrl + "' " +
+        "data-quality='" + quality + "' " +
+        "style='display: flex;'>" +
+        "<div class='thumb-16x9'><img src='" + thumb + "'/></div>" +
+        "<div class='flex-column flex-fill m-2' style='display: flex;'>" +
+        "<div><h5 class='kbd'><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div>" +
+        "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + desc + "</h5></div>" +
+        (pub ? ("<div><h6>" + pub + "</h6></div>") : "") +
+        "</div>" +
+        "</div>" +
         "</div>"
       );
       added++;
@@ -853,50 +806,50 @@ $(".actions").on("click", ".btn-stream", async function () {
     scheduledActionInfo.lastExecution = new Date();
     toggleScreen("videos");
     setShortcutScope("streaming");
-  } catch(err) {
+  } catch (err) {
     let badLink = $(this).data("link-details");
-    $(".streamUrl").filter(function() { return $(this).val() ===  badLink; }).addClass("is-invalid");
+    $(".streamUrl").filter(function () { return $(this).val() === badLink; }).addClass("is-invalid");
     toggleScreen("overlaySettings", "show");
     console.error(err);
   }
 });
-$("#btnRemoteAssistance").on("click", async function() {
+$("#btnRemoteAssistance").on("click", async function () {
   const run = async () => {
     $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
     $("#overlayPleaseWait").fadeIn();
     var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
-  if (os.platform() == "darwin") {
-    qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
-  } else if (os.platform() == "linux") {
-    qsUrl = "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz";
-  }
-  var initialTriggerText = $(this).html();
-  $(this).prop("disabled", true);
-  var qs = await downloadFile(qsUrl, $("#loadingProgress .progress-bar"));
-  $("#overlayPleaseWait").delay(15000).fadeOut(400, function() {
-    $("#loadingProgress .progress-bar").closest("div.align-self-center").hide();
-  });
-  var qsFilename = path.basename(qsUrl);
-  try {
-    if (qs && !(qs instanceof Error)) {
-      const destPath = path.join(appPath, qsFilename);
-      fs.writeFileSync(destPath, Buffer.from(qs));
-      shell.openExternal(destPath);
-    } else {
-      console.error("Failed to download TeamViewer QuickSupport:", qs);
+    if (os.platform() == "darwin") {
+      qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
+    } else if (os.platform() == "linux") {
+      qsUrl = "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz";
     }
-  } catch (e) {
-    console.error(e);
-  } finally {
-    $(this).html(initialTriggerText).prop("disabled", false);
-  }
+    var initialTriggerText = $(this).html();
+    $(this).prop("disabled", true);
+    var qs = await downloadFile(qsUrl, $("#loadingProgress .progress-bar"));
+    $("#overlayPleaseWait").delay(15000).fadeOut(400, function () {
+      $("#loadingProgress .progress-bar").closest("div.align-self-center").hide();
+    });
+    var qsFilename = path.basename(qsUrl);
+    try {
+      if (qs && !(qs instanceof Error)) {
+        const destPath = path.join(appPath, qsFilename);
+        fs.writeFileSync(destPath, Buffer.from(qs));
+        openExternal(destPath);
+      } else {
+        console.error("Failed to download TeamViewer QuickSupport:", qs);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      $(this).html(initialTriggerText).prop("disabled", false);
+    }
   };
   await confirmIfNeeded("confirmRemoteAssistance", (prefs.labelRemoteAssistance || "Remote assistance").toLowerCase(), run);
 });
 $(document).on("select2:open", () => {
   document.querySelector(".select2-search__field").focus();
 });
-$(".btn-sort-schedules").on("click", function() {
+$(".btn-sort-schedules").on("click", function () {
   const getCellValue = (tr, idx) => {
     let val = $(tr).find("td").eq(idx).find("input, select").val();
     return (val == 0 ? val + 7 : val);
@@ -909,11 +862,11 @@ $(".btn-sort-schedules").on("click", function() {
   $(".schedule tbody input, .schedule tbody schedule").last().change();
 });
 let eventSrcElem, sourceRow;
-$(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
+$(".links tbody, .schedule tbody").on("dragstart", "tr", function () {
   eventSrcElem = $(event.target).closest("tbody").get(0);
   sourceRow = $(event.target).closest("tr");
   if ($(event.target).closest("tr").find(".btn-delete:visible").length === 0) return false;
-}).on("dragover", "tr", function(){
+}).on("dragover", "tr", function () {
   event.preventDefault();
   try {
     if (eventSrcElem === $(event.target).closest("tbody").get(0)) {
@@ -925,9 +878,9 @@ $(".links tbody, .schedule tbody").on("dragstart", "tr", function() {
         targetRow.before(sourceRow.get(0));
       }
     }
-  } catch(err) {
+  } catch (err) {
     console.error(err);
   }
-}).on("dragend", "tr", function() {
+}).on("dragend", "tr", function () {
   sourceRow.find("input, select").last().change();
 });

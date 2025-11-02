@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain } = require("electron"),
   os = require("os"),
   remote = require("@electron/remote/main");
 var win = {};
+const cookieJar = new Map();
 remote.initialize();
 function createUpdateWindow() {
   win = new BrowserWindow({
@@ -19,6 +20,57 @@ function createUpdateWindow() {
   const ses = win.webContents.session;
   ses.clearCache();
   ses.clearStorageData();
+  ses.webRequest.onBeforeSendHeaders({ urls: ['https://stream.jw.org/*'] }, (details, callback) => {
+    const headers = details.requestHeaders;
+    // Set Referer
+    if (headers['X-Referer']) {
+      headers['Referer'] = headers['X-Referer'];
+      delete headers['X-Referer'];
+    } else {
+      headers['Referer'] = 'https://stream.jw.org/home';
+    }
+    // Set Cookie
+    if (cookieJar.size > 0) {
+      headers['Cookie'] = Array.from(cookieJar.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+    }
+    // Set xsrf-token-stream
+    const xsrf = cookieJar.get('xsrf-token-stream');
+    if (xsrf) {
+      headers['xsrf-token-stream'] = xsrf;
+    }
+    // Set default headers
+    headers['accept'] = headers['accept'] || 'application/json';
+    headers['x-requested-with'] = headers['x-requested-with'] || 'XMLHttpRequest';
+    if (details.method === 'PUT') {
+      headers['content-type'] = headers['content-type'] || 'application/json';
+    }
+    if ((details.url.includes('/api/v1/libraryBranch/') || details.url.includes('/api/v1/program/')) && !details.url.includes('/auth/')) {
+      headers['oidc-domain'] = headers['oidc-domain'] || 'jworg';
+    }
+    callback({ requestHeaders: headers });
+  });
+  ses.webRequest.onHeadersReceived({ urls: ['https://stream.jw.org/*'] }, (details, callback) => {
+    // Update cookies from set-cookie
+    const setCookie = details.responseHeaders['set-cookie'];
+    if (setCookie) {
+      const sc = Array.isArray(setCookie) ? setCookie : [setCookie];
+      for (const c of sc) {
+        const parts = c.split(";").map(s => s.trim());
+        const pair = parts[0];
+        const eq = pair.indexOf("=");
+        if (eq > 0) cookieJar.set(pair.substring(0, eq).trim(), pair.substring(eq + 1));
+        const maxAgeAttr = parts.find(p => /^Max-Age=/i.test(p));
+        if (maxAgeAttr) {
+          const maxAge = parseInt(maxAgeAttr.split("=")[1]);
+          if (!isNaN(maxAge)) {
+            const exp = Math.floor(Date.now() / 1000) + maxAge;
+            cookieJar.set("stream-session-expiry", String(exp));
+          }
+        }
+      }
+    }
+    callback({ responseHeaders: details.responseHeaders });
+  });
   remote.enable(win.webContents);
   win.setMenuBarVisibility(false);
   win.loadFile("index.html");

@@ -779,26 +779,45 @@ $(".actions").on("click", ".btn-stream", async function () {
       if (!playUrl) continue;
       const thumb = (typeof it.thumbnail === "string" && it.thumbnail.length > 0) ? (it.thumbnail.startsWith("/") ? ("https://stream.jw.org" + it.thumbnail) : it.thumbnail) : "";
       const pub = it.publishedDate ? new Date(parseInt(it.publishedDate)).toLocaleDateString() : "";
-      const desc = it.title || it.subcategory_name || it.categoryProgramType || "Program";
+      let desc = it.title;
+      console.log("Additional fields: ", it.additionalFields);
+      if (!desc?.length && it.additionalFields) {
+        try {
+          const jsonObj = JSON.parse(it.additionalFields);
+          desc = jsonObj.themeAndSession;
+          if (it.languageCode) {
+            const i18nRes = await axios.get(`https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`);
+            console.log(`GET https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`, i18nRes.status, i18nRes.data);
+            const i18n = i18nRes.data;
+            desc = i18n[desc];
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (!desc) {
+        desc = it.subcategory_name || it.categoryProgramType || "Program";
+      }
+      console.log("Description: ", desc);
       const guid = it.key || it.guid || (it.playUrl && it.playUrl.guid) || "";
       const specialtyGuid = (it.playUrl && it.playUrl.specialtyGuid) || it.specialtyGuid || "";
       const audioUrl = (it.playUrl && it.playUrl.audioUrl) || "";
       const quality = (it.playUrl && it.playUrl.quality) || "undefined";
       $(".streamingVideos").append(
         "<div class='mt-0 pt-2'>" +
-        "<div class='flex-column flex-fill h-100 rounded bg-light text-dark' " +
+        "<div class='flex-column flex-fill h-100 rounded' " +
         "data-url='" + playUrl + "' " +
         "data-playurl='" + playUrl + "' " +
         "data-guid='" + guid + "' " +
         "data-specialty='" + specialtyGuid + "' " +
         "data-audiourl='" + audioUrl + "' " +
         "data-quality='" + quality + "' " +
-        "style='display: flex;'>" +
-        "<div class='thumb-16x9'><img src='" + thumb + "'/></div>" +
-        "<div class='flex-column flex-fill m-2' style='display: flex;'>" +
-        "<div><h5 class='kbd'><kbd>" + String.fromCharCode(66 + added) + "</kbd></h5></div>" +
-        "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h5>" + desc + "</h5></div>" +
-        (pub ? ("<div><h6>" + pub + "</h6></div>") : "") +
+        "style='display: flex; flex-direction: row; background-image: url(\"" + thumb + "\"); background-size: cover; background-position: center;'>" +
+        "<div class='flex-column flex-fill p-2' style='display: flex; background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.6));'>" +
+        "<div><h6 class='kbd'><kbd style='background-color: white; color: black;'>" + String.fromCharCode(66 + added) + "</kbd></h6></div>" +
+        "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h6 style='color: white; white-space: normal; word-wrap: break-word;'>" + desc + "</h6></div>" +
+        (pub ? ("<div><p style='color: white; white-space: normal; word-wrap: break-word;'>" + pub + "</p></div>") : "") +
+        "</div>" +
         "</div>" +
         "</div>" +
         "</div>"

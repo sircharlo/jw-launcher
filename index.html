@@ -1,689 +1,978 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>JW Launcher</title>
+    <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
+    <link
+      rel="stylesheet"
+      href="node_modules/bootstrap-dark-5/dist/css/bootstrap-dark.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="node_modules/@fortawesome/fontawesome-free/css/all.min.css"
+    />
+    <style>
+      html,
+      body {
+        overflow: hidden;
+        height: 100%;
+        user-select: none;
+      }
 
-<head>
-  <title>JW Launcher</title>
-  <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
-  <link rel="stylesheet" href="node_modules/bootstrap-dark-5/dist/css/bootstrap-dark.min.css">
-  <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
-  <style>
-    html,
-    body {
-      overflow: hidden;
-      height: 100%;
-      user-select: none;
-    }
-
-    .overlay {
-      background: var(--bs-light);
-      color: var(--bs-dark);
-      position: fixed;
-      height: 100%;
-      width: 100%;
-      z-index: 5000;
-      top: 0;
-      left: 0;
-      float: left;
-      text-align: center;
-      display: flex;
-    }
-
-    #overlaySettings {
-      z-index: 50;
-      text-align: left;
-      font-size: 0.9em
-    }
-
-    #overlaySettings div.btn-group-toggle {
-      border: 1px solid transparent;
-      border-radius: 4px;
-    }
-
-    span.select2.is-invalid span.select2-selection {
-      border-color: #dc3545;
-      padding-right: calc(1.5em + .75rem);
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right calc(.375em + .1875rem) center;
-      background-size: calc(.75em + .375rem) calc(.75em + .375rem)
-    }
-
-    #overlaySettings input[type=text] {
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    #overlaySettings table td {
-      vertical-align: middle;
-    }
-
-    #overlaySettings table td div {
-      display: flex;
-      align-items: center;
-    }
-
-    #overlaySettings table td div:not(.desc) {
-      justify-content: end;
-    }
-
-    /* Cursor feedback for settings toggles */
-    #overlaySettings .form-check-input:not(:disabled),
-    #overlaySettings .form-check-input:not(:disabled) + .form-check-label {
-      cursor: pointer;
-    }
-    #overlaySettings .form-check-input:disabled,
-    #overlaySettings .form-check-input:disabled + .form-check-label {
-      cursor: not-allowed;
-    }
-
-    span.select2.is-invalid .select2-selection__arrow {
-      right: 25px !important;
-    }
-
-    #overlaySettings tbody .btn-sort-schedule {
-      display: inline-block;
-      vertical-align: middle;
-      cursor: grab;
-    }
-
-    #overlaySettings tbody .btn-sort-schedule:active {
-      cursor: grabbing;
-    }
-
-    #version,
-    #broadcast1button,
-    #btnGoHome,
-    #btnGoHome2,
-    .lblGoHome,
-    .lblGoHome2 {
-      display: flex;
-    }
-
-    #version span.badge {
-      font-weight: normal;
-    }
-
-    .actions {
-      height: 90%;
-    }
-
-    .actions button:hover,
-    .streamingVideos>div>div:hover,
-    .featuredVideos>div>div:hover {
-      filter: brightness(0.9);
-    }
-
-    .streamingVideos>div>div,
-    .featuredVideos>div>div,
-    .actions .btn {
-      cursor: pointer;
-      color: var(--bs-black);
-    }
-
-    .advanced-actions {
-      height: 10%;
-    }
-
-    .actions .btn {
-      font-size: calc(1.5vw + 1.5vh);
-      line-height: 1.2;
-    }
-
-    #broadcast1button em {
-      display: contents;
-    }
-
-    .advanced-actions .btn {
-      font-size: calc(0.75vw + 0.75vh);
-    }
-
-    #videos h5:not(.kbd) {
-      width: 100%;
-      margin-bottom: 0;
-      font-size: calc(1vh + 1vw);
-    }
-
-    #videos .featuredVideos h5:not(.kbd) {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    #videos .streamingVideos h5:not(.kbd) {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    #videos h6 {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: calc(1vh + 1vw);
-    }
-
-    .go-home {
-      background-color: #f4511e;
-      font-size: calc(1vh + 1vw);
-    }
-
-    #closeButton {
-      position: fixed;
-      height: 10vh;
-      width: 10vh;
-      line-height: 9vh;
-      border-bottom-right-radius: 2.5vw;
-      font-size: 3vw;
-      z-index: 1000;
-    }
-
-    .thumb-16x9 {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      overflow: hidden;
-      border-top-left-radius: inherit;
-      border-top-right-radius: inherit;
-    }
-
-    .thumb-16x9 img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    @media (prefers-color-scheme: dark) {
       .overlay {
-        background: var(--bs-gray-800);
-        color: var(--bs-light);
+        background: var(--bs-light);
+        color: var(--bs-dark);
+        position: fixed;
+        height: 100%;
+        width: 100%;
+        z-index: 5000;
+        top: 0;
+        left: 0;
+        float: left;
+        text-align: center;
+        display: flex;
       }
 
-      .select2-dropdown,
-      #select2-broadcastLang-container {
-        color: var(--bs-light) !important;
-        background: var(--bs-dark) !important;
-        border-radius: .2rem;
+      #overlaySettings {
+        z-index: 50;
+        text-align: left;
+        font-size: 0.9em;
       }
 
-      .select2-container--default .select2-results__option--selected {
-        background: var(--bs-secondary) !important;
+      #overlaySettings div.btn-group-toggle {
+        border: 1px solid transparent;
+        border-radius: 4px;
       }
 
-      .select2-container--default .select2-selection--single {
-        border-color: var(--bs-secondary) !important;
-        background-color: var(--bs-dark) !important;
+      span.select2.is-invalid span.select2-selection {
+        border-color: #dc3545;
+        padding-right: calc(1.5em + 0.75rem);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+      }
+
+      #overlaySettings input[type="text"] {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      #overlaySettings table td {
+        vertical-align: middle;
+      }
+
+      #overlaySettings table td div {
+        display: flex;
+        align-items: center;
+      }
+
+      #overlaySettings table td div:not(.desc) {
+        justify-content: end;
+      }
+
+      /* Cursor feedback for settings toggles */
+      #overlaySettings .form-check-input:not(:disabled),
+      #overlaySettings .form-check-input:not(:disabled) + .form-check-label {
+        cursor: pointer;
+      }
+      #overlaySettings .form-check-input:disabled,
+      #overlaySettings .form-check-input:disabled + .form-check-label {
+        cursor: not-allowed;
+      }
+
+      span.select2.is-invalid .select2-selection__arrow {
+        right: 25px !important;
+      }
+
+      #overlaySettings tbody .btn-sort-schedule {
+        display: inline-block;
+        vertical-align: middle;
+        cursor: grab;
+      }
+
+      #overlaySettings tbody .btn-sort-schedule:active {
+        cursor: grabbing;
+      }
+
+      #version,
+      #broadcast1button,
+      #btnGoHome,
+      #btnGoHome2,
+      .lblGoHome,
+      .lblGoHome2 {
+        display: flex;
+      }
+
+      #version span.badge {
+        font-weight: normal;
+      }
+
+      .actions {
+        height: 90%;
+      }
+
+      .actions button:hover,
+      .streamingVideos > div > div:hover,
+      .featuredVideos > div > div:hover {
+        filter: brightness(0.9);
+      }
+
+      .streamingVideos > div > div,
+      .featuredVideos > div > div,
+      .actions .btn {
+        cursor: pointer;
+        color: var(--bs-black);
+      }
+
+      .advanced-actions {
+        height: 10%;
       }
 
       .actions .btn {
-        color: var(--bs-white);
+        font-size: calc(1.5vw + 1.5vh);
+        line-height: 1.2;
       }
-    }
-  </style>
-  <meta name="color-scheme" content="light dark">
-  <script>
-    window.$ = window.jQuery = require('jquery');
-    window.Bootstrap = require('bootstrap');
-    window.select2 = require('select2')(jQuery);
-  </script>
-  <script src="node_modules/inputmask/dist/jquery.inputmask.min.js"></script>
-  <link rel="stylesheet" href="node_modules/select2/dist/css/select2.min.css">
-</head>
 
-<body>
-  <div id="overlayInternetCheck" class="overlay justify-content-center">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-wifi"></i>
-      </div>
-      <div class="align-self-center fa-2x" role="status">
-        <i class="fas fa-circle-notch fa-spin"></i>
-      </div>
-    </div>
-  </div>
-  <div id="overlayPleaseWait" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-tasks"></i>
-      </div>
-      <div class="align-self-center fa-2x" role="status">
-        <i class="fas fa-circle-notch fa-spin"></i>
-      </div>
-      <div class="align-self-center" role="status" style="display: none;">
-        <div class="progress" id="loadingProgress">
-          <div class="progress-bar" role="progressbar"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div id="overlayInternetFail" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-wifi"></i>
-      </div>
-      <div class="align-self-center text-danger fa-2x" role="status">
-        <i class="fas fa-circle-notch fa-spin"></i>
-      </div>
-    </div>
-  </div>
-  <div id="overlayUpdateCheck" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-wifi"></i>
-      </div>
-      <div class="align-self-center text-success fa-2x" role="status">
-        <i class="fas fa-check-circle"></i>
-      </div>
-    </div>
-  </div>
-  <div id="overlayUpdateAvailable" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-cloud-download-alt"></i>
-      </div>
-      <div class="align-self-center text-warning fa-2x" role="status">
-        <i class="fas fa-circle-notch fa-spin"></i>
-      </div>
-    </div>
-  </div>
-  <div id="overlayUpdateDownloaded" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-cloud-download-alt"></i>
-      </div>
-      <div class="align-self-center text-success fa-2x" role="status">
-        <i class="fas fa-check-circle"></i>
-      </div>
-    </div>
-  </div>
-  <div id="overlayScheduledAction" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center">
-      <div class="align-self-center fa-5x" role="status">
-        <i class="fas fa-fw fa-clock"></i>
-      </div>
-      <div class="align-self-center" role="status">
-        <h3 id="actionDesc"></h3>
-      </div>
-      <div class="align-self-center" role="status">
-        <div class="progress" id="scheduledDelayProgress">
-          <div class="progress-bar" role="progressbar"></div>
-        </div>
-      </div>
-      <div class="align-self-center fa-2x" role="status">
-        <button type='button' class='btn btn-danger'>
-          <i class="fas fa-fw fa-hand-paper"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-  <div id="overlaySettings" class="flex-column p-2 overlay" style="display: none;">
-    <div class="flex-column flex-grow-1 w-100" style="display: flex; overflow-y: auto;">
-      <div class="accordion" id="settingsAccordion">
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingUser">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUser" aria-expanded="true" aria-controls="collapseUser">
-              User preferences
-            </button>
-          </h2>
-          <div id="collapseUser" class="accordion-collapse collapse show" aria-labelledby="headingUser">
-            <div class="accordion-body">
-              <table class="table table-sm table-hover">
-                <tbody>
-                  <tr>
-                    <td class="col-3">
-                      <div class="desc">
-                        <label for="username" class="w-100">Zoom display name</label>
-                      </div>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" id="username" required />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="col-3">
-                      <div class="desc">
-                        <label for="broadcastLang" class="w-100">Language for JW Broadcasting</label>
-                      </div>
-                    </td>
-                    <td>
-                      <select class="form-select" id="broadcastLang" style="width: 100%">
-                        <option></option>
-                      </select>
-                    </td>
-                  </tr>
-                  <tr class="onOffToggle">
-                    <td class="col-3">
-                      <div class="desc">
-                        <label for="autoRunAtBoot">Autorun at startup</label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="autoRunAtBoot" />
-                        <label class="form-check-label" for="enableSettings"></label>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingMediaLinks">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMediaLinks" aria-expanded="false" aria-controls="collapseMediaLinks">
-              Links to meetings and special events
-            </button>
-          </h2>
-          <div id="collapseMediaLinks" class="accordion-collapse collapse show" aria-labelledby="headingMediaLinks">
-            <div class="accordion-body">
-              <table class="table table-sm links table-hover">
-                <thead>
-                  <tr class="text-start">
-                    <th scope="col" class="col-3">Link type</th>
-                    <th scope="col" class="col-3">Label</th>
-                    <th scope="col" class="col-5">Connection details</th>
-                    <th scope="col" class="col-1 text-end">
-                      <button type='button' class='btn btn-success btn-sm btn-add-link'><i class='fas fa-plus'></i></button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                </tbody>
-              </table>
-              <input id="linkArray" type="hidden" />
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingSchedule">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSchedule" aria-expanded="false" aria-controls="collapseSchedule">
-              Schedule
-            </button>
-          </h2>
-          <div id="collapseSchedule" class="accordion-collapse collapse show" aria-labelledby="headingSchedule">
-            <div class="accordion-body">
-              <table class="table table-sm schedule table-hover">
-                <thead>
-                  <tr class="text-start">
-                    <th scope="col" class="col-3">Day</th>
-                    <th scope="col" class="col-1">Time</th>
-                    <th scope="col" class="col-7">Action to trigger</th>
-                    <th scope="col" class="col-1 text-end">
-                      <button type='button' class='btn btn-light btn-sm btn-sort-schedules me-1 text-dark'><i class='fas fa-sort-amount-up'></i></button>
-                      <button type='button' class='btn btn-success btn-sm btn-add-schedule'><i class='fas fa-plus'></i></button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                </tbody>
-              </table>
-              <input id="scheduleArray" type="hidden" />
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingActions">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActions" aria-expanded="false" aria-controls="collapseActions">
-              Action buttons
-            </button>
-          </h2>
-          <div id="collapseActions" class="accordion-collapse collapse show" aria-labelledby="headingActions">
-            <div class="accordion-body">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr class="text-start">
-                    <th scope="col" class="col-3">Action</th>
-                    <th scope="col" class="col-6">Label</th>
-                    <th scope="col" class="col-1 text-center">Shortcut</th>
-                    <th scope="col" class="col-1 text-center">Confirm?</th>
-                    <th scope="col" class="col-1 text-end">Show</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="onOffToggle">
-                    <td>
-                      <div class="desc">Shutdown computer</div>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" placeholder="Shutdown" id="labelShutdown" required />
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutShutdown" />
-                        <label class="form-check-label" for="enableShortcutShutdown"></label>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input" id="confirmShutdown" />
-                        <label class="form-check-label" for="confirmShutdown"></label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShutdown" />
-                        <label class="form-check-label" for="enableShutdown"></label>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr class="onOffToggle">
-                    <td>
-                      <div class="desc">Initiate TeamViewer session</div>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" placeholder="Remote assistance" id="labelRemoteAssistance" required />
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutRemoteAssistance" />
-                        <label class="form-check-label" for="enableShortcutRemoteAssistance"></label>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input" id="confirmRemoteAssistance" />
-                        <label class="form-check-label" for="confirmRemoteAssistance"></label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableRemoteAssistance" />
-                        <label class="form-check-label" for="enableRemoteAssistance"></label>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr class="onOffToggle">
-                    <td>
-                      <div class="desc">Configure application settings</div>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" placeholder="Settings" id="labelSettings" required />
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutSettings" />
-                        <label class="form-check-label" for="enableShortcutSettings"></label>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input" id="confirmSettings" disabled />
-                        <label class="form-check-label" for="confirmSettings"></label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" checked disabled id="enableSettings" />
-                        <label class="form-check-label" for="enableSettings"></label>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr class="onOffToggle">
-                    <td>
-                      <div class="desc">Close application</div>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm" placeholder="Close" id="labelClose" required />
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableShortcutClose" />
-                        <label class="form-check-label" for="enableShortcutClose"></label>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <div class="form-check form-switch d-inline-block">
-                        <input type="checkbox" class="form-check-input" id="confirmClose" />
-                        <label class="form-check-label" for="confirmClose"></label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input optional-action-enabled" id="enableClose" />
-                        <label class="form-check-label" for="enableClose"></label>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="align-items-start mt-2" style="display: flex;">
-      <div class="col-4">
-        <button type="button" class="btn btn-primary" id="btnExport">
-          <i class="fas fa-fw fa-file-export"></i> Export settings file
-        </button>
-      </div>
-      <div id="version" class="align-items-center justify-content-center pt-3 flex-fill col-4">
-        <span class="badge bg-secondary"></span>
-      </div>
-      <div class="col-4 text-end">
-        <button type="button" class="btn btn-secondary btnSettings">
-          <i class="fas fa-fw fa-home"></i> Go back
-        </button>
-      </div>
-    </div>
-  </div>
-  <div id="home" class="flex-column h-100 pb-2">
-    <div class="actions align-items-center gx-2 justify-content-center px-2 row row-cols-3">
-      <div class="broadcastContainer flex-grow-1 pt-2">
-        <button id="broadcast1button" type="button" class="align-items-center btn btn-lg flex-column h-100 w-100">
-        </button>
-      </div>
-    </div>
-    <div class="advanced-actions align-items-center gx-2 justify-content-center pt-2 px-2 row row-cols-auto">
-      <div class="flex-grow-1 h-100">
-        <button class="btn btn-danger d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnShutdown">
-          <div class="kbd action-kbd mx-2 position-absolute" id="kbdShutdown" style="left: 0;"></div>
-          <div class="text-center">
-            <div><i class="fas fa-fw fa-power-off"></i></div>
-            <div><span id="lblShutdown"></span></div>
-          </div>
-        </button>
-      </div>
-      <div class="flex-grow-1 h-100">
-        <button class="btn btn-info d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnRemoteAssistance">
-          <div class="kbd action-kbd mx-2 position-absolute" id="kbdRemoteAssistance" style="left: 0;"></div>
-          <div class="text-center">
-            <div><i class="fas fa-fw fa-hands-helping"></i></div>
-            <div><span id="lblRemoteAssistance"></span></div>
-          </div>
-        </button>
-      </div>
-      <div class="flex-grow-1 h-100" style="display: none;">
-        <button class="btn btn-warning col h-100 justify-content-center w-100" id="btn-mac-update">
-          <i class="fas fa-fw fa-exclamation-triangle"></i> Update available!
-        </button>
-      </div>
-      <div class="flex-grow-1 h-100">
-        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnSettings">
-          <div class="kbd action-kbd mx-2 position-absolute" id="kbdSettings" style="left: 0;"></div>
-          <div class="text-center">
-            <div><i class="fas fa-fw fa-user-cog"></i></div>
-            <div><span id="lblSettings"></span></div>
-          </div>
-        </button>
-      </div>
-      <div class="flex-grow-1 h-100" id="btnCloseContainer" style="display: none;">
-        <button class="btn btn-warning d-flex align-items-center justify-content-center w-100 h-100 position-relative" id="btnClose">
-          <div class="kbd action-kbd mx-2 position-absolute" id="kbdClose" style="left: 0;"></div>
-          <div class="text-center">
-            <div><i class="fas fa-fw fa-times"></i></div>
-            <div><span id="lblClose"></span></div>
-          </div>
-        </button>
-      </div>
-    </div>
-  </div>
-  <div id="videos" class="overlay flex-column bg-dark" style="display: none;">
-    <div id="videoPlayer" class="overlay flex-column bg-dark" style="display: none;">
-      <div id="closeButton" class="bg-danger">
-        <kbd>X</kbd>
-      </div>
-    </div>
-    <div class="align-items-center h-100 justify-content-center px-2" style="display: none;">
-      <div class="featuredVideos g-2 h-100 justify-content-center row row-cols-5 pt-2">
-        <div class="mt-0 pt-2">
-          <div class="h-100 rounded go-home p-2" id="btnGoHome">
-            <div class="flex-column flex-fill h-100 rounded lblGoHome">
-              <div class="flex-row">
-                <h5><kbd>A</kbd></h5>
-              </div>
-              <div class="align-items-center flex-fill flex-row" style="display: flex;">
-                <h5 id="lblGoHome">
-                </h5>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="align-items-center h-100 justify-content-center px-2" style="display: none;">
-      <div class="streamingVideos g-2 h-100 justify-content-center row row-cols-4 pt-2">
-        <div class="mt-0 pt-2">
-          <div class="h-100 rounded go-home p-2" id="btnGoHome2">
-            <div class="flex-column flex-fill h-100 rounded lblGoHome2">
-              <div class="flex-row">
-                <h5><kbd>A</kbd></h5>
-              </div>
-              <div class="align-items-center flex-fill flex-row" style="display: flex;">
-                <h5 id="lblGoHome2">
-                </h5>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div id="overlayConfirm" class="overlay justify-content-center" style="display: none;">
-    <div class="align-self-center text-center">
-      <div class="mb-3">
-        <h4 id="overlayConfirmMessage"></h4>
-      </div>
-      <div class="d-flex gap-2 justify-content-center">
-        <button type="button" class="btn btn-success" id="overlayConfirmYes">
-          <span class="me-2"><kbd>Y</kbd></span>Yes
-        </button>
-        <button type="button" class="btn btn-secondary" id="overlayConfirmNo">
-          <span class="me-2"><kbd>N</kbd></span>No
-        </button>
-      </div>
-    </div>
-  </div>
-  <script src="./launcher.js"></script>
-</body>
+      #broadcast1button em {
+        display: contents;
+      }
 
+      .advanced-actions .btn {
+        font-size: calc(0.75vw + 0.75vh);
+      }
+
+      #videos h5:not(.kbd) {
+        width: 100%;
+        margin-bottom: 0;
+        font-size: calc(1vh + 1vw);
+      }
+
+      #videos .featuredVideos h5:not(.kbd),
+      #videos .streamingVideos h6:not(.kbd) {
+        display: -webkit-box;
+        -webkit-line-clamp: 5;
+        line-clamp: 5;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.5;
+      }
+
+      #videos h6 {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: calc(1vh + 1vw);
+      }
+
+      .go-home {
+        background-color: #f4511e;
+        font-size: calc(1vh + 1vw);
+      }
+
+      #closeButton {
+        position: fixed;
+        height: 10vh;
+        width: 10vh;
+        line-height: 9vh;
+        border-bottom-right-radius: 2.5vw;
+        font-size: 3vw;
+        z-index: 1000;
+      }
+
+      .thumb-16x9 {
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%;
+        overflow: hidden;
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
+      }
+
+      .thumb-16x9 img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .overlay {
+          background: var(--bs-gray-800);
+          color: var(--bs-light);
+        }
+
+        .select2-dropdown,
+        #select2-broadcastLang-container {
+          color: var(--bs-light) !important;
+          background: var(--bs-dark) !important;
+          border-radius: 0.2rem;
+        }
+
+        .select2-container--default .select2-results__option--selected {
+          background: var(--bs-secondary) !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+          border-color: var(--bs-secondary) !important;
+          background-color: var(--bs-dark) !important;
+        }
+
+        .actions .btn {
+          color: var(--bs-white);
+        }
+      }
+    </style>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      window.$ = window.jQuery = require("jquery");
+      window.Bootstrap = require("bootstrap");
+      window.select2 = require("select2")(jQuery);
+    </script>
+    <script src="node_modules/inputmask/dist/jquery.inputmask.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="node_modules/select2/dist/css/select2.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="overlayInternetCheck" class="overlay justify-content-center">
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-wifi"></i>
+        </div>
+        <div class="align-self-center fa-2x" role="status">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayPleaseWait"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-tasks"></i>
+        </div>
+        <div class="align-self-center fa-2x" role="status">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <div class="align-self-center" role="status" style="display: none">
+          <div class="progress" id="loadingProgress">
+            <div class="progress-bar" role="progressbar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayInternetFail"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-wifi"></i>
+        </div>
+        <div class="align-self-center text-danger fa-2x" role="status">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayUpdateCheck"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-wifi"></i>
+        </div>
+        <div class="align-self-center text-success fa-2x" role="status">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayUpdateAvailable"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-cloud-download-alt"></i>
+        </div>
+        <div class="align-self-center text-warning fa-2x" role="status">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayUpdateDownloaded"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-cloud-download-alt"></i>
+        </div>
+        <div class="align-self-center text-success fa-2x" role="status">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayScheduledAction"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center">
+        <div class="align-self-center fa-5x" role="status">
+          <i class="fas fa-fw fa-clock"></i>
+        </div>
+        <div class="align-self-center" role="status">
+          <h3 id="actionDesc"></h3>
+        </div>
+        <div class="align-self-center" role="status">
+          <div class="progress" id="scheduledDelayProgress">
+            <div class="progress-bar" role="progressbar"></div>
+          </div>
+        </div>
+        <div class="align-self-center fa-2x" role="status">
+          <button type="button" class="btn btn-danger">
+            <i class="fas fa-fw fa-hand-paper"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlaySettings"
+      class="flex-column p-2 overlay"
+      style="display: none"
+    >
+      <div
+        class="flex-column flex-grow-1 w-100"
+        style="display: flex; overflow-y: auto"
+      >
+        <div class="accordion" id="settingsAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingUser">
+              <button
+                class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseUser"
+                aria-expanded="true"
+                aria-controls="collapseUser"
+              >
+                User preferences
+              </button>
+            </h2>
+            <div
+              id="collapseUser"
+              class="accordion-collapse collapse show"
+              aria-labelledby="headingUser"
+            >
+              <div class="accordion-body">
+                <table class="table table-sm table-hover">
+                  <tbody>
+                    <tr>
+                      <td class="col-3">
+                        <div class="desc">
+                          <label for="username" class="w-100"
+                            >Zoom display name</label
+                          >
+                        </div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          id="username"
+                          required
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-3">
+                        <div class="desc">
+                          <label for="broadcastLang" class="w-100"
+                            >Language for JW Broadcasting</label
+                          >
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          class="form-select"
+                          id="broadcastLang"
+                          style="width: 100%"
+                        >
+                          <option></option>
+                        </select>
+                      </td>
+                    </tr>
+                    <tr class="onOffToggle">
+                      <td class="col-3">
+                        <div class="desc">
+                          <label for="autoRunAtBoot">Autorun at startup</label>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check form-switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="autoRunAtBoot"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableSettings"
+                          ></label>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingMediaLinks">
+              <button
+                class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseMediaLinks"
+                aria-expanded="false"
+                aria-controls="collapseMediaLinks"
+              >
+                Links to meetings and special events
+              </button>
+            </h2>
+            <div
+              id="collapseMediaLinks"
+              class="accordion-collapse collapse show"
+              aria-labelledby="headingMediaLinks"
+            >
+              <div class="accordion-body">
+                <table class="table table-sm links table-hover">
+                  <thead>
+                    <tr class="text-start">
+                      <th scope="col" class="col-3">Link type</th>
+                      <th scope="col" class="col-3">Label</th>
+                      <th scope="col" class="col-5">Connection details</th>
+                      <th scope="col" class="col-1 text-end">
+                        <button
+                          type="button"
+                          class="btn btn-success btn-sm btn-add-link"
+                        >
+                          <i class="fas fa-plus"></i>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <input id="linkArray" type="hidden" />
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSchedule">
+              <button
+                class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseSchedule"
+                aria-expanded="false"
+                aria-controls="collapseSchedule"
+              >
+                Schedule
+              </button>
+            </h2>
+            <div
+              id="collapseSchedule"
+              class="accordion-collapse collapse show"
+              aria-labelledby="headingSchedule"
+            >
+              <div class="accordion-body">
+                <table class="table table-sm schedule table-hover">
+                  <thead>
+                    <tr class="text-start">
+                      <th scope="col" class="col-3">Day</th>
+                      <th scope="col" class="col-1">Time</th>
+                      <th scope="col" class="col-7">Action to trigger</th>
+                      <th scope="col" class="col-1 text-end">
+                        <button
+                          type="button"
+                          class="btn btn-light btn-sm btn-sort-schedules me-1 text-dark"
+                        >
+                          <i class="fas fa-sort-amount-up"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-success btn-sm btn-add-schedule"
+                        >
+                          <i class="fas fa-plus"></i>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <input id="scheduleArray" type="hidden" />
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingActions">
+              <button
+                class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseActions"
+                aria-expanded="false"
+                aria-controls="collapseActions"
+              >
+                Action buttons
+              </button>
+            </h2>
+            <div
+              id="collapseActions"
+              class="accordion-collapse collapse show"
+              aria-labelledby="headingActions"
+            >
+              <div class="accordion-body">
+                <table class="table table-sm table-hover">
+                  <thead>
+                    <tr class="text-start">
+                      <th scope="col" class="col-3">Action</th>
+                      <th scope="col" class="col-6">Label</th>
+                      <th scope="col" class="col-1 text-center">Shortcut</th>
+                      <th scope="col" class="col-1 text-center">Confirm?</th>
+                      <th scope="col" class="col-1 text-end">Show</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="onOffToggle">
+                      <td>
+                        <div class="desc">Shutdown computer</div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Shutdown"
+                          id="labelShutdown"
+                          required
+                        />
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableShortcutShutdown"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableShortcutShutdown"
+                          ></label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="confirmShutdown"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="confirmShutdown"
+                          ></label>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check form-switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableShutdown"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableShutdown"
+                          ></label>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="onOffToggle">
+                      <td>
+                        <div class="desc">Initiate TeamViewer session</div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Remote assistance"
+                          id="labelRemoteAssistance"
+                          required
+                        />
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableShortcutRemoteAssistance"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableShortcutRemoteAssistance"
+                          ></label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="confirmRemoteAssistance"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="confirmRemoteAssistance"
+                          ></label>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check form-switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableRemoteAssistance"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableRemoteAssistance"
+                          ></label>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="onOffToggle">
+                      <td>
+                        <div class="desc">Configure application settings</div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Settings"
+                          id="labelSettings"
+                          required
+                        />
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableShortcutSettings"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableShortcutSettings"
+                          ></label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="confirmSettings"
+                            disabled
+                          />
+                          <label
+                            class="form-check-label"
+                            for="confirmSettings"
+                          ></label>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check form-switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            checked
+                            disabled
+                            id="enableSettings"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableSettings"
+                          ></label>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="onOffToggle">
+                      <td>
+                        <div class="desc">Close application</div>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Close"
+                          id="labelClose"
+                          required
+                        />
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableShortcutClose"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableShortcutClose"
+                          ></label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="confirmClose"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="confirmClose"
+                          ></label>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="form-check form-switch">
+                          <input
+                            type="checkbox"
+                            class="form-check-input optional-action-enabled"
+                            id="enableClose"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="enableClose"
+                          ></label>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="align-items-start mt-2" style="display: flex">
+        <div class="col-4">
+          <button type="button" class="btn btn-primary" id="btnExport">
+            <i class="fas fa-fw fa-file-export"></i> Export settings file
+          </button>
+        </div>
+        <div
+          id="version"
+          class="align-items-center justify-content-center pt-3 flex-fill col-4"
+        >
+          <span class="badge bg-secondary"></span>
+        </div>
+        <div class="col-4 text-end">
+          <button type="button" class="btn btn-secondary btnSettings">
+            <i class="fas fa-fw fa-home"></i> Go back
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="home" class="flex-column h-100 pb-2">
+      <div
+        class="actions align-items-center gx-2 justify-content-center px-2 row row-cols-3"
+      >
+        <div class="broadcastContainer flex-grow-1 pt-2">
+          <button
+            id="broadcast1button"
+            type="button"
+            class="align-items-center btn btn-lg flex-column h-100 w-100"
+          ></button>
+        </div>
+      </div>
+      <div
+        class="advanced-actions align-items-center gx-2 justify-content-center pt-2 px-2 row row-cols-auto"
+      >
+        <div class="flex-grow-1 h-100">
+          <button
+            class="btn btn-danger d-flex align-items-center justify-content-center w-100 h-100 position-relative"
+            id="btnShutdown"
+          >
+            <div
+              class="kbd action-kbd mx-2 position-absolute"
+              id="kbdShutdown"
+              style="left: 0"
+            ></div>
+            <div class="text-center">
+              <div><i class="fas fa-fw fa-power-off"></i></div>
+              <div><span id="lblShutdown"></span></div>
+            </div>
+          </button>
+        </div>
+        <div class="flex-grow-1 h-100">
+          <button
+            class="btn btn-info d-flex align-items-center justify-content-center w-100 h-100 position-relative"
+            id="btnRemoteAssistance"
+          >
+            <div
+              class="kbd action-kbd mx-2 position-absolute"
+              id="kbdRemoteAssistance"
+              style="left: 0"
+            ></div>
+            <div class="text-center">
+              <div><i class="fas fa-fw fa-hands-helping"></i></div>
+              <div><span id="lblRemoteAssistance"></span></div>
+            </div>
+          </button>
+        </div>
+        <div class="flex-grow-1 h-100" style="display: none">
+          <button
+            class="btn btn-warning col h-100 justify-content-center w-100"
+            id="btn-mac-update"
+          >
+            <i class="fas fa-fw fa-exclamation-triangle"></i> Update available!
+          </button>
+        </div>
+        <div class="flex-grow-1 h-100">
+          <button
+            class="btn btn-secondary d-flex align-items-center justify-content-center w-100 h-100 position-relative"
+            id="btnSettings"
+          >
+            <div
+              class="kbd action-kbd mx-2 position-absolute"
+              id="kbdSettings"
+              style="left: 0"
+            ></div>
+            <div class="text-center">
+              <div><i class="fas fa-fw fa-user-cog"></i></div>
+              <div><span id="lblSettings"></span></div>
+            </div>
+          </button>
+        </div>
+        <div
+          class="flex-grow-1 h-100"
+          id="btnCloseContainer"
+          style="display: none"
+        >
+          <button
+            class="btn btn-warning d-flex align-items-center justify-content-center w-100 h-100 position-relative"
+            id="btnClose"
+          >
+            <div
+              class="kbd action-kbd mx-2 position-absolute"
+              id="kbdClose"
+              style="left: 0"
+            ></div>
+            <div class="text-center">
+              <div><i class="fas fa-fw fa-times"></i></div>
+              <div><span id="lblClose"></span></div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="videos" class="overlay flex-column bg-dark" style="display: none">
+      <div
+        id="videoPlayer"
+        class="overlay flex-column bg-dark"
+        style="display: none"
+      >
+        <div id="closeButton" class="bg-danger">
+          <kbd>X</kbd>
+        </div>
+      </div>
+      <div
+        class="align-items-center h-100 justify-content-center px-2"
+        style="display: none"
+      >
+        <div
+          class="featuredVideos g-2 h-100 justify-content-center row row-cols-5 pt-2"
+        >
+          <div class="mt-0 pt-2">
+            <div class="h-100 rounded go-home p-2" id="btnGoHome">
+              <div class="flex-column flex-fill h-100 rounded lblGoHome">
+                <div class="flex-row">
+                  <h5><kbd>A</kbd></h5>
+                </div>
+                <div
+                  class="align-items-center flex-fill flex-row"
+                  style="display: flex"
+                >
+                  <h5 id="lblGoHome"></h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="align-items-center h-100 justify-content-center px-2"
+        style="display: none"
+      >
+        <div
+          class="streamingVideos g-2 h-100 justify-content-center row row-cols-4 pt-2"
+        >
+          <div class="mt-0 pt-2">
+            <div class="h-100 rounded go-home p-2" id="btnGoHome2">
+              <div class="flex-column flex-fill h-100 rounded lblGoHome2">
+                <div class="flex-row">
+                  <h5><kbd>A</kbd></h5>
+                </div>
+                <div
+                  class="align-items-center flex-fill flex-row"
+                  style="display: flex"
+                >
+                  <h5 id="lblGoHome2"></h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="overlayConfirm"
+      class="overlay justify-content-center"
+      style="display: none"
+    >
+      <div class="align-self-center text-center">
+        <div class="mb-3">
+          <h4 id="overlayConfirmMessage"></h4>
+        </div>
+        <div class="d-flex gap-2 justify-content-center">
+          <button type="button" class="btn btn-success" id="overlayConfirmYes">
+            <span class="me-2"><kbd>Y</kbd></span
+            >Yes
+          </button>
+          <button type="button" class="btn btn-secondary" id="overlayConfirmNo">
+            <span class="me-2"><kbd>N</kbd></span
+            >No
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="./launcher.js"></script>
+  </body>
 </html>

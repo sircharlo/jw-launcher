@@ -2,6 +2,18 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## v25.11.2
+
+Release date: 2025-11-07
+
+### Features
+
+- **JW Stream**: Added support for displaying program descriptions.
+
+### Fixes
+
+- **UI**: Improved styling consistency across video tiles.
+
 ## v25.11.1
 
 Release date: 2025-11-02

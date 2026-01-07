@@ -1,20 +1,44 @@
 {
-  "name": "jw-launcher",
-  "version": "25.11.2",
-  "description": "JW Launcher",
-  "main": "main.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sircharlo/jw-launcher.git"
+  "author": "",
+  "build": {
+    "appId": "sircharlo.jw-launcher",
+    "buildDependenciesFromSource": true,
+    "linux": {
+      "category": "Utilities",
+      "icon": "build/icon.png",
+      "publish": [
+        "github"
+      ],
+      "target": "AppImage"
+    },
+    "mac": {
+      "publish": [
+        "github"
+      ],
+      "target": {
+        "arch": [
+          "universal"
+        ],
+        "target": "dmg"
+      }
+    },
+    "productName": "JW Launcher",
+    "win": {
+      "icon": "build/icon.ico",
+      "publish": [
+        "github"
+      ],
+      "target": "NSIS"
+    }
   },
   "dependencies": {
     "@electron/remote": "^2.1.3",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@popperjs/core": "^2.11.8",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "bootstrap-dark-5": "^1.1.3",
-    "electron-updater": "^6.6.2",
+    "electron-updater": "^6.7.3",
     "graceful-fs": "^4.2.11",
     "inputmask": "^5.0.9",
     "jquery": "^3.7.1",
@@ -22,52 +46,28 @@
     "power-control": "^1.0.0",
     "select2": "^4.1.0-rc.0"
   },
-  "build": {
-    "appId": "sircharlo.jw-launcher",
-    "productName": "JW Launcher",
-    "win": {
-      "target": "NSIS",
-      "icon": "build/icon.ico",
-      "publish": [
-        "github"
-      ]
-    },
-    "linux": {
-      "category": "Utilities",
-      "target": "AppImage",
-      "icon": "build/icon.png",
-      "publish": [
-        "github"
-      ]
-    },
-    "mac": {
-      "target": {
-        "target": "dmg",
-        "arch": [
-          "universal"
-        ]
-      },
-      "publish": [
-        "github"
-      ]
-    },
-    "buildDependenciesFromSource": true
-  },
+  "description": "JW Launcher",
   "devDependencies": {
-    "electron": "^38.4.0",
-    "electron-builder": "^26.0.12"
+    "electron": "^39.2.7",
+    "electron-builder": "^26.4.0"
+  },
+  "license": "ISC",
+  "main": "main.js",
+  "name": "jw-launcher",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sircharlo/jw-launcher.git"
   },
   "scripts": {
-    "start": "electron .",
+    "pack-linux": "electron-builder --linux",
+    "pack-linux-test": "electron-builder --dir --linux",
     "pack-win": "electron-builder --win",
     "pack-win-test": "electron-builder --dir --win",
-    "pack-linux-test": "electron-builder --dir --linux",
-    "pack-linux": "electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps",
     "publish": "electron-builder --win -p always",
     "publish-linux": "electron-builder --linux -p always",
-    "postinstall": "electron-builder install-app-deps",
-    "release": "electron-builder"
+    "release": "electron-builder",
+    "start": "electron ."
   },
-  "author": "",
-  "license": "ISC"
+  "version": "26.1.0"
 }

@@ -41,7 +41,7 @@
     "electron-updater": "^6.7.3",
     "graceful-fs": "^4.2.11",
     "inputmask": "^5.0.9",
-    "jquery": "^3.7.1",
+    "jquery": "^4.0.0",
     "path": "^0.12.7",
     "power-control": "^1.0.0",
     "select2": "^4.1.0-rc.0"

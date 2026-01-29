@@ -518,24 +518,58 @@ function generateButtons() {
     return $(this).find(".linkName").val() !== "";
   });
   for (let link = 0; link < links.length; link++) {
-    $(".actions").append(
-      "<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" +
-        $(links[link]).find(".linkType").val() +
-        " flex-column h-100 w-100' style='display: flex; background-color: " +
-        colors[link % colors.length] +
-        "' data-link-details='" +
-        $(links[link])
-          .find(".linkDetails input")
-          .map(function () {
+    // Build container
+    const $container = $("<div>")
+        .addClass("buttonContainer pt-2 flex-grow-1");
+
+    // Build button
+    const linkType = $(links[link]).find(".linkType").val();
+    const linkName = $(links[link]).find(".linkName").val();
+    const bgColor = colors[link % colors.length];
+
+    // Collect link details safely
+    const linkDetails = $(links[link])
+        .find(".linkDetails input")
+        .map(function () {
             return $(this).val();
-          })
-          .get() +
-        "'><div><kbd>" +
-        String.fromCharCode(link + 65) +
-        "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" +
-        $(links[link]).find(".linkName").val() +
-        "</div></button></div>"
+        })
+        .get()
+        .join(",");
+
+    // Button element
+    const $button = $("<button>", {
+        type: "button"
+    })
+        .addClass(
+            "align-items-center btn btn-lg flex-column h-100 w-100"
+        )
+        // add linkType as a class without HTML concatenation
+        .addClass("btn-" + linkType)
+        // styles via css()
+        .css({
+            display: "flex",
+            backgroundColor: bgColor
+        })
+        // data attribute via attr()
+        .attr("data-link-details", linkDetails);
+
+    // Keyboard label
+    const $kbdWrapper = $("<div>").append(
+        $("<kbd>").text(String.fromCharCode(link + 65))
     );
+
+    // Text label (safe: text(), not html())
+    const $label = $("<div>")
+        .addClass("align-items-center flex-fill")
+        .css("display", "flex")
+        .text(linkName);
+
+    // Assemble button
+    $button.append($kbdWrapper, $label);
+    $container.append($button);
+
+    // Append to actions
+    $(".actions").append($container);
   }
   $(".actions").append($(".actions > .broadcastContainer"));
 }

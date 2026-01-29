@@ -689,7 +689,7 @@ function processSettings() {
     Close: "Close",
   };
   for (var label of ["Settings", "Shutdown", "RemoteAssistance", "Close"]) {
-    $("#lbl" + label).html(prefs["label" + label] || defaultLabels[label]);
+    $("#lbl" + label).text(prefs["label" + label] || defaultLabels[label]);
   }
   for (var enableMe of ["Shutdown", "RemoteAssistance"]) {
     $("#btn" + enableMe)

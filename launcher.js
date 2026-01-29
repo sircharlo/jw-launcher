@@ -518,24 +518,43 @@ function generateButtons() {
     return $(this).find(".linkName").val() !== "";
   });
   for (let link = 0; link < links.length; link++) {
-    $(".actions").append(
-      "<div class='buttonContainer pt-2 flex-grow-1'><button type='button' class='align-items-center btn btn-lg btn-" +
-        $(links[link]).find(".linkType").val() +
-        " flex-column h-100 w-100' style='display: flex; background-color: " +
-        colors[link % colors.length] +
-        "' data-link-details='" +
-        $(links[link])
-          .find(".linkDetails input")
-          .map(function () {
-            return $(this).val();
-          })
-          .get() +
-        "'><div><kbd>" +
-        String.fromCharCode(link + 65) +
-        "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" +
-        $(links[link]).find(".linkName").val() +
-        "</div></button></div>"
-    );
+    const $linkRow = $(links[link]);
+    const linkType = $linkRow.find(".linkType").val();
+    const linkDetails = $linkRow
+      .find(".linkDetails input")
+      .map(function () {
+        return $(this).val();
+      })
+      .get()
+      .join(",");
+    const linkName = $linkRow.find(".linkName").val();
+
+    const $container = $("<div>")
+      .addClass("buttonContainer pt-2 flex-grow-1");
+
+    const $button = $("<button>")
+      .attr("type", "button")
+      .addClass("align-items-center btn btn-lg flex-column h-100 w-100")
+      .addClass(linkType)
+      .css({
+        display: "flex",
+        "background-color": colors[link % colors.length],
+      })
+      .attr("data-link-details", linkDetails);
+
+    const $kbdWrapper = $("<div>");
+    const $kbd = $("<kbd>").text(String.fromCharCode(link + 65));
+    $kbdWrapper.append($kbd);
+
+    const $nameDiv = $("<div>")
+      .addClass("align-items-center flex-fill")
+      .css("display", "flex")
+      .text(linkName);
+
+    $button.append($kbdWrapper).append($nameDiv);
+    $container.append($button);
+
+    $(".actions").append($container);
   }
   $(".actions").append($(".actions > .broadcastContainer"));
 }

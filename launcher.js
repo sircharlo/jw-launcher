@@ -518,42 +518,57 @@ function generateButtons() {
     return $(this).find(".linkName").val() !== "";
   });
   for (let link = 0; link < links.length; link++) {
-    const $linkRow = $(links[link]);
-    const linkType = $linkRow.find(".linkType").val();
-    const linkDetails = $linkRow
-      .find(".linkDetails input")
-      .map(function () {
-        return $(this).val();
-      })
-      .get()
-      .join(",");
-    const linkName = $linkRow.find(".linkName").val();
-
+    // Build container
     const $container = $("<div>")
-      .addClass("buttonContainer pt-2 flex-grow-1");
+        .addClass("buttonContainer pt-2 flex-grow-1");
 
-    const $button = $("<button>")
-      .attr("type", "button")
-      .addClass("align-items-center btn btn-lg flex-column h-100 w-100")
-      .addClass(linkType)
-      .css({
-        display: "flex",
-        "background-color": colors[link % colors.length],
-      })
-      .attr("data-link-details", linkDetails);
+    // Build button
+    const linkType = $(links[link]).find(".linkType").val();
+    const linkName = $(links[link]).find(".linkName").val();
+    const bgColor = colors[link % colors.length];
 
-    const $kbdWrapper = $("<div>");
-    const $kbd = $("<kbd>").text(String.fromCharCode(link + 65));
-    $kbdWrapper.append($kbd);
+    // Collect link details safely
+    const linkDetails = $(links[link])
+        .find(".linkDetails input")
+        .map(function () {
+            return $(this).val();
+        })
+        .get()
+        .join(",");
 
-    const $nameDiv = $("<div>")
-      .addClass("align-items-center flex-fill")
-      .css("display", "flex")
-      .text(linkName);
+    // Button element
+    const $button = $("<button>", {
+        type: "button"
+    })
+        .addClass(
+            "align-items-center btn btn-lg flex-column h-100 w-100"
+        )
+        // add linkType as a class without HTML concatenation
+        .addClass("btn-" + linkType)
+        // styles via css()
+        .css({
+            display: "flex",
+            backgroundColor: bgColor
+        })
+        // data attribute via attr()
+        .attr("data-link-details", linkDetails);
 
-    $button.append($kbdWrapper).append($nameDiv);
+    // Keyboard label
+    const $kbdWrapper = $("<div>").append(
+        $("<kbd>").text(String.fromCharCode(link + 65))
+    );
+
+    // Text label (safe: text(), not html())
+    const $label = $("<div>")
+        .addClass("align-items-center flex-fill")
+        .css("display", "flex")
+        .text(linkName);
+
+    // Assemble button
+    $button.append($kbdWrapper, $label);
     $container.append($button);
 
+    // Append to actions
     $(".actions").append($container);
   }
   $(".actions").append($(".actions > .broadcastContainer"));

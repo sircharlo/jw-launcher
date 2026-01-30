@@ -1,8 +1,8 @@
 const axios = require("axios").default;
-const net = require("net");
+const net = require("node:net");
 const remote = require("@electron/remote");
 const fs = require("graceful-fs");
-const path = require("path");
+const path = require("node:path");
 const powerControl = require("power-control");
 const { shell } = require("electron");
 const $ = require("jquery");
@@ -58,11 +58,11 @@ require("electron").ipcRenderer.on("hideThenShow", (event, message) => {
 require("electron").ipcRenderer.on(
   "updateDownloadProgress",
   (event, message) => {
-    var dotsDone = Math.floor(parseFloat(message[0]) / 10);
+    const dotsDone = Math.floor(Number.parseFloat(message[0]) / 10);
     $("#updatePercent i:nth-of-type(" + dotsDone + ")")
       .addClass("fa-circle text-primary")
       .removeClass("fa-dot-circle");
-  }
+  },
 );
 require("electron").ipcRenderer.on("macUpdate", () => {
   $("#btn-mac-update")
@@ -128,7 +128,7 @@ let currentShortcutScope = null; // one of: 'home' | 'featured' | 'streaming' | 
 
 function unregisterShortcuts() {
   if (currentKeyHandler) {
-    window.removeEventListener("keyup", currentKeyHandler, true);
+    globalThis.removeEventListener("keyup", currentKeyHandler, true);
     currentKeyHandler = null;
   }
 }
@@ -153,18 +153,23 @@ function setShortcutScope(scope) {
           const sel = actionShortcutMap.get(key);
           try {
             $(sel).click();
-          } catch (_) {}
+          } catch (error) {
+            console.error(error);
+            return;
+          }
           return;
         }
         const linksCount = $(".links tbody tr").filter(function () {
           return $(this).find(".linkName").val() !== "";
         }).length;
-        const broadcastKey = String.fromCharCode(linksCount + 65).toLowerCase();
+        const broadcastKey = String.fromCodePoint(
+          linksCount + 65,
+        ).toLowerCase();
         if (key === broadcastKey) {
           event.preventDefault();
           $("#broadcast1button").click();
         } else {
-          const idx = key.charCodeAt(0) - 97;
+          const idx = key.codePointAt(0) - 97;
           if (idx >= 0) {
             event.preventDefault();
             $(".actions .buttonContainer button").eq(idx).click();
@@ -179,7 +184,7 @@ function setShortcutScope(scope) {
           return;
         }
         if (!$("#closeButton").is(":visible")) {
-          const idx = key.charCodeAt(0) - 97;
+          const idx = key.codePointAt(0) - 97;
           if (idx >= 0) {
             event.preventDefault();
             $(".featuredVideos > div > div").eq(idx).click();
@@ -194,7 +199,7 @@ function setShortcutScope(scope) {
           return;
         }
         if (!$("#closeButton").is(":visible")) {
-          const idx = key.charCodeAt(0) - 97;
+          const idx = key.codePointAt(0) - 97;
           if (idx >= 0) {
             event.preventDefault();
             $(".streamingVideos > div > div").eq(idx).click();
@@ -211,7 +216,7 @@ function setShortcutScope(scope) {
       }
     }
   };
-  window.addEventListener("keyup", currentKeyHandler, true);
+  globalThis.addEventListener("keyup", currentKeyHandler, true);
 }
 function isReachable(hostname, port) {
   return new Promise((resolve) => {
@@ -229,7 +234,8 @@ function isReachable(hostname, port) {
         console.error(e);
         resolve(false);
       });
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
       resolve(false);
     }
   });
@@ -259,7 +265,7 @@ $(".links tbody").on("change", ".linkName, .linkDetails input", function () {
           .map(function () {
             return $(this).val();
           })
-          .get()
+          .get(),
       );
     }
   });
@@ -275,19 +281,19 @@ $(".links tbody").on("change", ".linkType", function () {
     thisRow
       .find(".linkDetails")
       .append(
-        "<div class='input-group input-group-sm'><span class='input-group-text'>ID</span><input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><span class='input-group-text'>Password</span><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' /></div>"
+        "<div class='input-group input-group-sm'><span class='input-group-text'>ID</span><input type='text' class='form-control form-control-sm zoomId dynamic-field' placeholder='Zoom meeting ID' /><span class='input-group-text'>Password</span><input type='text' class='form-control form-control-sm zoomPassword dynamic-field' placeholder='Zoom meeting password' /></div>",
       );
     thisRow
       .find(".zoomId")
       .inputmask(
         ["999 999 999", "999 999 9999", "999 999 9999 9", "999 999 9999 99"],
-        { clearIncomplete: true }
+        { clearIncomplete: true },
       );
   } else if (linkType === "stream") {
     thisRow
       .find(".linkDetails")
       .append(
-        "<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>"
+        "<div class='input-group input-group-sm'><span class='input-group-text'>https://fle.stream.jw.org/</span><input type='text' class='form-control form-control-sm streamUrl dynamic-field' placeholder='t/ABCDEFGHIJKLOMNOPQRSTUVWXYZ' /></div>",
       );
   }
   thisRow.find("input").addClass("is-invalid");
@@ -308,7 +314,7 @@ $(".schedule tbody").on("change", "input, select", function () {
         .map(function () {
           return $(this).val();
         })
-        .get()
+        .get(),
     );
   });
   if ($(".schedule tbody tr .is-invalid:visible").length === 0) {
@@ -320,43 +326,43 @@ $(".schedule tbody").on("change", "input, select", function () {
 async function languageRefresh() {
   let availMedia = (
     await getJson(
-      "https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured"
+      "https://b.jw-cdn.org/apis/mediator/v1/categories/E/StudioFeatured",
     )
   ).category.media
     .concat(
       (
         await getJson(
-          "https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos"
+          "https://b.jw-cdn.org/apis/mediator/v1/categories/E/LatestVideos",
         )
-      ).category.media
+      ).category.media,
     )
     .map((item) => item.availableLanguages);
   let availLangs = [...new Set([].concat(...availMedia))];
   for (var lang of Object.values(
     (
       await getJson(
-        "https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www"
+        "https://b.jw-cdn.org/apis/mediator/v1/languages/E/all?clientType=www",
       )
-    ).languages
+    ).languages,
   ).filter((value) => availLangs.includes(value.code))) {
     $("#broadcastLang").append(
       $("<option>", {
         value: lang.code,
         text: lang.vernacular + " (" + lang.name + ")",
-      })
+      }),
     );
   }
   $("#broadcastLang").select2();
 }
 function addNewLink() {
   $(".links tbody").append(
-    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>"
+    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>",
   );
   $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
 }
 function addNewSchedule() {
   $(".schedule tbody").append(
-    "<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>"
+    "<tr draggable='true'><td><select class='form-select form-select-sm triggerDay dynamic-field is-invalid'><option value='' hidden></option><option value='1'>Monday</option><option value='2'>Tuesday</option><option value='3'>Wednesday</option><option value='4'>Thursday</option><option value='5'>Friday</option><option value='6'>Saturday</option><option value='0'>Sunday</option></select></td><td><input type='text' class='form-control form-control-sm triggerTime dynamic-field is-invalid' /></td><td><select class='form-select form-select-sm targetAction dynamic-field is-invalid'><option value='' hidden></option></select></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-schedule'><i class='fas fa-minus'></i></button></td></tr>",
   );
   $(".schedule tbody tr")
     .last()
@@ -380,14 +386,14 @@ function updateScheduleTargets() {
         sel.append(
           $("<option>", {
             value: index,
-          })
+          }),
         );
       sel
         .find("option[value=" + index + "]")
         .text(
           $(this).find(".linkName").val() +
             " - " +
-            $(this).find(".linkType option:selected").text()
+            $(this).find(".linkType option:selected").text(),
         );
     });
   });
@@ -397,7 +403,7 @@ async function broadcastLoad() {
   if (prefs.broadcastLang) {
     let req = await getJson(
       "https://b.jw-cdn.org/apis/mediator/v1/translations/" +
-        prefs.broadcastLang
+        prefs.broadcastLang,
     );
     console.log("Broadcast response: ", req);
     broadcastStrings = req.translations[prefs.broadcastLang];
@@ -408,20 +414,20 @@ async function broadcastLoad() {
           $(
             $(".links tbody tr").filter(function () {
               return $(this).find(".linkName").val() !== "";
-            }).length % colors.length
+            }).length % colors.length,
           )
-        ]
+        ],
       )
       .html(
         "<div><kbd>" +
           String.fromCharCode(
             $(".links tbody tr").filter(function () {
               return $(this).find(".linkName").val() !== "";
-            }).length + 65
+            }).length + 65,
           ) +
           "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" +
           broadcastStrings.ttlHome +
-          "</div>"
+          "</div>",
       );
     $("#lblGoHome").html(broadcastStrings.btnStillWatchingGoBack);
     $("#lblGoHome2").html(broadcastStrings.btnStillWatchingGoBack);
@@ -430,14 +436,14 @@ async function broadcastLoad() {
         await getJson(
           "https://b.jw-cdn.org/apis/mediator/v1/categories/" +
             prefs.broadcastLang +
-            "/StudioFeatured?detailed=0&clientType=www"
+            "/StudioFeatured?detailed=0&clientType=www",
         )
       ).category.media;
       var latestVideos = (
         await getJson(
           "https://b.jw-cdn.org/apis/mediator/v1/categories/" +
             prefs.broadcastLang +
-            "/LatestVideos?detailed=0&clientType=www"
+            "/LatestVideos?detailed=0&clientType=www",
         )
       ).category.media;
       let allVideos = studioFeatured
@@ -458,13 +464,13 @@ async function broadcastLoad() {
             String.fromCharCode(65 + videos) +
             "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5 style='color: white; white-space: normal; word-wrap: break-word;'>" +
             featuredVideo.title +
-            "</h5></div></div></div></div>"
+            "</h5></div></div></div></div>",
         ).click(function () {
           $("#videoPlayer")
             .append("<video controls autoplay></video>")
             .fadeIn();
           $("#videoPlayer video").append(
-            "<source src='" + $(this).find("div").data("url") + "' / >"
+            "<source src='" + $(this).find("div").data("url") + "' / >",
           );
           setShortcutScope("player");
         });
@@ -472,13 +478,13 @@ async function broadcastLoad() {
       }
       $(".featuredVideos > div").css(
         "height",
-        100 / Math.ceil($(".featuredVideos > div").length / 5) + "%"
+        100 / Math.ceil($(".featuredVideos > div").length / 5) + "%",
       );
     } catch (err) {
       console.error(
         "[ERROR] https://b.jw-cdn.org/apis/mediator/v1/categories/" +
           prefs.broadcastLang +
-          "/StudioFeatured?detailed=0&clientType=www"
+          "/StudioFeatured?detailed=0&clientType=www",
       );
     }
     $("#broadcast1button")
@@ -494,7 +500,7 @@ function buttonHeight(broadcastVideos) {
     broadcast = broadcastVideos > 0 ? 1 : 0;
   $(".actions > div").css(
     "height",
-    100 / Math.ceil((broadcast + links) / 3) + "%"
+    100 / Math.ceil((broadcast + links) / 3) + "%",
   );
 }
 async function downloadFile(url, progressElem) {
@@ -519,8 +525,7 @@ function generateButtons() {
   });
   for (let link = 0; link < links.length; link++) {
     // Build container
-    const $container = $("<div>")
-        .addClass("buttonContainer pt-2 flex-grow-1");
+    const $container = $("<div>").addClass("buttonContainer pt-2 flex-grow-1");
 
     // Build button
     const linkType = $(links[link]).find(".linkType").val();
@@ -529,40 +534,38 @@ function generateButtons() {
 
     // Collect link details safely
     const linkDetails = $(links[link])
-        .find(".linkDetails input")
-        .map(function () {
-            return $(this).val();
-        })
-        .get()
-        .join(",");
+      .find(".linkDetails input")
+      .map(function () {
+        return $(this).val();
+      })
+      .get()
+      .join(",");
 
     // Button element
     const $button = $("<button>", {
-        type: "button"
+      type: "button",
     })
-        .addClass(
-            "align-items-center btn btn-lg flex-column h-100 w-100"
-        )
-        // add linkType as a class without HTML concatenation
-        .addClass("btn-" + linkType)
-        // styles via css()
-        .css({
-            display: "flex",
-            backgroundColor: bgColor
-        })
-        // data attribute via attr()
-        .attr("data-link-details", linkDetails);
+      .addClass("align-items-center btn btn-lg flex-column h-100 w-100")
+      // add linkType as a class without HTML concatenation
+      .addClass("btn-" + linkType)
+      // styles via css()
+      .css({
+        display: "flex",
+        backgroundColor: bgColor,
+      })
+      // data attribute via attr()
+      .attr("data-link-details", linkDetails);
 
     // Keyboard label
     const $kbdWrapper = $("<div>").append(
-        $("<kbd>").text(String.fromCharCode(link + 65))
+      $("<kbd>").text(String.fromCharCode(link + 65)),
     );
 
     // Text label (safe: text(), not html())
     const $label = $("<div>")
-        .addClass("align-items-center flex-fill")
-        .css("display", "flex")
-        .text(linkName);
+      .addClass("align-items-center flex-fill")
+      .css("display", "flex")
+      .text(linkName);
 
     // Assemble button
     $button.append($kbdWrapper, $label);
@@ -772,7 +775,7 @@ function renderActionShortcutBadges() {
   $("#kbdShutdown, #kbdRemoteAssistance, #kbdSettings, #kbdClose").each(
     function () {
       $(this).html("").hide();
-    }
+    },
   );
   // Helper to find key by selector
   const getKeyForSelector = (sel) => {
@@ -851,7 +854,7 @@ function scheduleLoader() {
             $(".schedule tbody tr .targetAction")
               .eq(s)
               .find("option:selected")
-              .text()
+              .text(),
           );
           $("#overlayScheduledAction").data("sKey", sKey);
           $("#overlayScheduledAction")
@@ -871,7 +874,7 @@ function scheduleLoader() {
             if (timeLeft <= 0) clearInterval(downloadTimer);
             $("#scheduledDelayProgress .progress-bar").css(
               "width",
-              (10 - timeLeft + 1) * 10 + "%"
+              (10 - timeLeft + 1) * 10 + "%",
             );
             timeLeft -= 1;
           }, 1000);
@@ -886,7 +889,7 @@ function toggleScreen(screen, action = "") {
   if (action == "show") {
     $("#" + screen).fadeIn("fast");
     $(
-      "#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : "")
+      "#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : ""),
     ).hide();
   } else if (action == "hide" || visible) {
     $("#home").show();
@@ -894,7 +897,7 @@ function toggleScreen(screen, action = "") {
   } else {
     $("#" + screen).fadeIn("fast");
     $(
-      "#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : "")
+      "#home" + (screen !== "overlayPleaseWait" ? ", #overlayPleaseWait" : ""),
     ).hide();
   }
 }
@@ -913,8 +916,8 @@ function updateCleanup() {
           .sort()
           .reduce((acc, key) => ({ ...acc, [key]: prefs[key] }), {}),
         null,
-        2
-      )
+        2,
+      ),
     );
   } catch (err) {
     console.error(err);
@@ -945,7 +948,7 @@ $("#overlayScheduledAction button").on("click", function () {
   }
 });
 $(
-  "#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)"
+  "#overlaySettings input:not(.dynamic-field), #overlaySettings select:not(.dynamic-field)",
 ).on("change", function () {
   if ($(this).prop("tagName") == "INPUT") {
     if ($(this).prop("type") == "checkbox") {
@@ -973,8 +976,8 @@ $(
         .sort()
         .reduce((acc, key) => ({ ...acc, [key]: prefs[key] }), {}),
       null,
-      2
-    )
+      2,
+    ),
   );
   processSettings();
 });
@@ -992,7 +995,7 @@ $("#btnShutdown").on("click", function () {
     (prefs.labelShutdown || "Shutdown").toLowerCase(),
     () => {
       powerControl.powerOff();
-    }
+    },
   );
 });
 $("#btnClose").on("click", function () {
@@ -1005,7 +1008,7 @@ $("#btnClose").on("click", function () {
       } catch (e) {
         console.error(e);
       }
-    }
+    },
   );
 });
 $(".btn-add-link").on("click", function () {
@@ -1077,11 +1080,11 @@ $(".streamingVideos").on(
           headers: {
             "X-Referer": "https://stream.jw.org/home?playerOpen=true",
           },
-        }
+        },
       );
       const detail = await axios.get(
         `https://stream.jw.org/api/v1/program/getByGuidForHome/vod/${guid}`,
-        { headers: { "content-type": undefined } }
+        { headers: { "content-type": undefined } },
       );
       if (detail && detail.data && Array.isArray(detail.data.downloadUrls)) {
         const dls = detail.data.downloadUrls;
@@ -1107,12 +1110,12 @@ $(".streamingVideos").on(
           };
           const presigned = await axios.put(
             "https://stream.jw.org/api/v1/libraryBranch/program/presignURL",
-            presignBody
+            presignBody,
           );
           console.log(
             "PUT https://stream.jw.org/api/v1/libraryBranch/program/presignURL",
             presigned.status,
-            presigned.data
+            presigned.data,
           );
           const signedUrl =
             presigned &&
@@ -1125,7 +1128,7 @@ $(".streamingVideos").on(
             .append(
               "<video controls autoplay><source src='" +
                 signedUrl +
-                "' / ></video>"
+                "' / ></video>",
             )
             .fadeIn();
           setShortcutScope("player");
@@ -1136,7 +1139,7 @@ $(".streamingVideos").on(
     } finally {
       toggleScreen("overlayPleaseWait", "hide");
     }
-  }
+  },
 );
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
@@ -1146,7 +1149,7 @@ $(".actions").on("click", ".btn-zoom", function () {
       "&pwd=" +
       linkDetails[1] +
       "&uname=" +
-      prefs.username
+      prefs.username,
   );
   let timeLeft = 15;
   let loadZoomTimer = setInterval(function () {
@@ -1174,71 +1177,71 @@ $(".actions").on("click", ".btn-stream", async function () {
   try {
     $(".streamingVideos > div:not(:first)").remove();
     let linkTokenRaw = decodeURIComponent(
-      $(this).data("link-details").split(",")[0]
+      $(this).data("link-details").split(",")[0],
     );
     let linkToken = linkTokenRaw.split("/").slice(-1)[0];
     console.log("Creating axios client for link token: ", linkToken);
     const loginRes = await axios.post(
       `https://stream.jw.org/api/v1/auth/login/share`,
       { token: linkToken },
-      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } }
+      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } },
     );
     console.log(
       "POST https://stream.jw.org/api/v1/auth/login/share",
       loginRes.status,
-      loginRes.data
+      loginRes.data,
     );
     const whoamiRes = await axios.get(
       `https://stream.jw.org/api/v1/auth/whoami`,
-      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } }
+      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } },
     );
     console.log(
       "GET https://stream.jw.org/api/v1/auth/whoami",
       whoamiRes.status,
-      whoamiRes.data
+      whoamiRes.data,
     );
     const linkRes = await axios.get(
       `https://stream.jw.org/api/v1/libraryBranch/library/link/${linkToken}`,
-      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } }
+      { headers: { "X-Referer": `https://stream.jw.org/${linkToken}` } },
     );
     console.log(
       `GET https://stream.jw.org/api/v1/libraryBranch/library/link/${linkToken}`,
       linkRes.status,
-      linkRes.data
+      linkRes.data,
     );
     const categoriesRes = await axios.get(
-      `https://stream.jw.org/api/v1/libraryBranch/home/category`
+      `https://stream.jw.org/api/v1/libraryBranch/home/category`,
     );
     console.log(
       "GET https://stream.jw.org/api/v1/libraryBranch/home/category",
       categoriesRes.status,
-      categoriesRes.data
+      categoriesRes.data,
     );
     const categoryList = Array.isArray(categoriesRes.data)
       ? categoriesRes.data
       : categoriesRes.data && Array.isArray(categoriesRes.data.items)
-      ? categoriesRes.data.items
-      : [];
+        ? categoriesRes.data.items
+        : [];
     const categoryType =
       (categoryList.find((x) => x && x.categoryType) || {}).categoryType ||
       "theocraticProgram";
     const subCatsRes = await axios.get(
-      `https://stream.jw.org/api/v1/libraryBranch/home/subCategory/${categoryType}`
+      `https://stream.jw.org/api/v1/libraryBranch/home/subCategory/${categoryType}`,
     );
     console.log(
       `GET https://stream.jw.org/api/v1/libraryBranch/home/subCategory/${categoryType}`,
       subCatsRes.status,
-      subCatsRes.data
+      subCatsRes.data,
     );
     let specialtyIds = [];
     if (subCatsRes && subCatsRes.data) {
       if (Array.isArray(subCatsRes.data)) {
         specialtyIds = subCatsRes.data.flatMap((x) =>
-          x.specialties.map((s) => s.key).filter(Boolean)
+          x.specialties.map((s) => s.key).filter(Boolean),
         );
       } else if (Array.isArray(subCatsRes.data.items)) {
         specialtyIds = subCatsRes.data.items.flatMap((x) =>
-          x.specialties.map((s) => s.key).filter(Boolean)
+          x.specialties.map((s) => s.key).filter(Boolean),
         );
       }
     }
@@ -1251,15 +1254,17 @@ $(".actions").on("click", ".btn-stream", async function () {
       try {
         console.log("Fetching program for specialty ID: ", specialtyIds[i]);
         const prog = await axios.get(
-          `https://stream.jw.org/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`
+          `https://stream.jw.org/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`,
         );
         console.log(
           `GET https://stream.jw.org/api/v1/libraryBranch/home/vodProgram/specialty/${specialtyIds[i]}`,
           prog.status,
-          prog.data
+          prog.data,
         );
         if (prog && prog.data) allPrograms.push(prog.data);
-      } catch (e) {}
+      } catch (error) {
+        console.error(error);
+      }
     }
     $("#loadingProgress .progress-bar")
       .css("width", "0%")
@@ -1274,9 +1279,8 @@ $(".actions").on("click", ".btn-stream", async function () {
       for (const it of arr) items.push(it);
     }
     let added = 0;
-    for (let idx = 0; idx < items.length; idx++) {
-      const it = items[idx] || {};
-      let playUrl = it.playUrl && it.playUrl.url ? it.playUrl.url : null;
+    for (const it of items) {
+      let playUrl = it.playUrl?.url ?? null;
       if (
         !playUrl &&
         Array.isArray(it.downloadUrls) &&
@@ -1286,7 +1290,7 @@ $(".actions").on("click", ".btn-stream", async function () {
           it.downloadUrls.find((d) => d.quality === "720") ||
           it.downloadUrls.find((d) => d.quality === "540") ||
           it.downloadUrls[0];
-        playUrl = preferred && preferred.url ? preferred.url : null;
+        playUrl = preferred?.url ?? null;
       }
       if (!playUrl) continue;
       const thumb =
@@ -1296,7 +1300,7 @@ $(".actions").on("click", ".btn-stream", async function () {
             : it.thumbnail
           : "";
       const pub = it.publishedDate
-        ? new Date(parseInt(it.publishedDate)).toLocaleDateString()
+        ? new Date(Number.parseInt(it.publishedDate)).toLocaleDateString()
         : "";
       let desc = it.title;
       console.log("Additional fields: ", it.additionalFields);
@@ -1306,12 +1310,12 @@ $(".actions").on("click", ".btn-stream", async function () {
           desc = jsonObj.themeAndSession;
           if (it.languageCode) {
             const i18nRes = await axios.get(
-              `https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`
+              `https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`,
             );
             console.log(
               `GET https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`,
               i18nRes.status,
-              i18nRes.data
+              i18nRes.data,
             );
             const i18n = i18nRes.data;
             desc = i18n[desc];
@@ -1368,13 +1372,13 @@ $(".actions").on("click", ".btn-stream", async function () {
           "</div>" +
           "</div>" +
           "</div>" +
-          "</div>"
+          "</div>",
       );
       added++;
     }
     $(".streamingVideos > div").css(
       "height",
-      100 / Math.ceil($(".streamingVideos > div").length / 4) + "%"
+      100 / Math.ceil($(".streamingVideos > div").length / 4) + "%",
     );
     toggleScreen("videos");
     setShortcutScope("streaming");
@@ -1428,7 +1432,7 @@ $("#btnRemoteAssistance").on("click", async function () {
   await confirmIfNeeded(
     "confirmRemoteAssistance",
     (prefs.labelRemoteAssistance || "Remote assistance").toLowerCase(),
-    run
+    run,
   );
 });
 $(document).on("select2:open", () => {
@@ -1445,7 +1449,7 @@ $(".btn-sort-schedules").on("click", function () {
         ? v1 - v2
         : v1.toString().localeCompare(v2))(
       getCellValue(asc ? a : b, idx),
-      getCellValue(asc ? b : a, idx)
+      getCellValue(asc ? b : a, idx),
     );
   const table = $(".schedule tbody").get(0);
   Array.from(table.querySelectorAll("tr"))
@@ -1468,7 +1472,7 @@ $(".links tbody, .schedule tbody")
       if (eventSrcElem === $(event.target).closest("tbody").get(0)) {
         let targetRow = $(event.target).closest("tr").get(0);
         let targetTableChildren = Array.from(
-          $(event.target).closest("tbody").get(0).children
+          $(event.target).closest("tbody").get(0).children,
         );
         if (
           targetTableChildren.indexOf(targetRow) >

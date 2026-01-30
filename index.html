@@ -1,8 +1,7 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
     <title>JW Launcher</title>
-    <!-- <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css"> -->
     <link
       rel="stylesheet"
       href="node_modules/bootstrap-dark-5/dist/css/bootstrap-dark.min.css"
@@ -229,9 +228,9 @@
     </style>
     <meta name="color-scheme" content="light dark" />
     <script>
-      window.$ = window.jQuery = require("jquery");
-      window.Bootstrap = require("bootstrap");
-      window.select2 = require("select2")(jQuery);
+      globalThis.$ = globalThis.jQuery = require("jquery");
+      globalThis.Bootstrap = require("bootstrap");
+      globalThis.select2 = require("select2")(jQuery);
     </script>
     <script src="node_modules/inputmask/dist/jquery.inputmask.min.js"></script>
     <link

@@ -23,5 +23,9 @@
         "timeframe",
         "userns",
         "zoommtg"
-    ]
+    ],
+    "sonarlint.connectedMode.project": {
+        "connectionId": "sircharlo",
+        "projectKey": "sircharlo_jw-launcher"
+    }
 }

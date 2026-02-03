@@ -402,8 +402,7 @@ async function broadcastLoad() {
   var videos = 0;
   if (prefs.broadcastLang) {
     let req = await getJson(
-      "https://b.jw-cdn.org/apis/mediator/v1/translations/" +
-        prefs.broadcastLang,
+      buildValidatedUrl("https://b.jw-cdn.org/apis/mediator/v1/translations/", prefs.broadcastLang, null),
     );
     console.log("Broadcast response: ", req);
     broadcastStrings = req.translations[prefs.broadcastLang];
@@ -434,16 +433,12 @@ async function broadcastLoad() {
     try {
       var studioFeatured = (
         await getJson(
-          "https://b.jw-cdn.org/apis/mediator/v1/categories/" +
-            prefs.broadcastLang +
-            "/StudioFeatured?detailed=0&clientType=www",
+          buildValidatedUrl("https://b.jw-cdn.org/apis/mediator/v1/categories/", prefs.broadcastLang, "StudioFeatured"),
         )
       ).category.media;
       var latestVideos = (
         await getJson(
-          "https://b.jw-cdn.org/apis/mediator/v1/categories/" +
-            prefs.broadcastLang +
-            "/LatestVideos?detailed=0&clientType=www",
+          buildValidatedUrl("https://b.jw-cdn.org/apis/mediator/v1/categories/", prefs.broadcastLang, "LatestVideos"),
         )
       ).category.media;
       let allVideos = studioFeatured
@@ -482,9 +477,7 @@ async function broadcastLoad() {
       );
     } catch (err) {
       console.error(
-        "[ERROR] https://b.jw-cdn.org/apis/mediator/v1/categories/" +
-          prefs.broadcastLang +
-          "/StudioFeatured?detailed=0&clientType=www",
+        "[ERROR] Failed to fetch StudioFeatured data for language: " + prefs.broadcastLang,
       );
     }
     $("#broadcast1button")
@@ -576,6 +569,58 @@ function generateButtons() {
   }
   $(".actions").append($(".actions > .broadcastContainer"));
 }
+function buildValidatedUrl(baseUrl, pathSegment, endpoint) {
+  try {
+    // Minimal path validation
+    if (baseUrl.includes('/../') || /\/%2e%2e\//i.test(baseUrl)) {
+      throw new Error('Invalid path');
+    }
+    
+    const url = new URL(baseUrl);
+    
+    // Protocol + host checks
+    const allowedDomains = ['b.jw-cdn.org', 'stream.jw.org']; // add your allowed domains here
+    if (!allowedDomains.includes(url.hostname)) {
+      throw new Error('Invalid host');
+    }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Invalid protocol');
+    }
+    
+    // Validate path parameters
+    if (pathSegment && !/^[A-Za-z0-9_-]+$/.test(pathSegment)) {
+      throw new Error('Invalid parameter');
+    }
+    
+    // Rebuild pathname from fixed literals + validated segments
+    if (pathSegment) {
+      if (baseUrl.includes('/translations/') && !baseUrl.includes('/translations/all/')) {
+        url.pathname = `/apis/mediator/v1/translations/${pathSegment}`;
+      } else if (baseUrl.includes('/categories/')) {
+        if (endpoint === "StudioFeatured") {
+          url.pathname = `/apis/mediator/v1/categories/${pathSegment}/StudioFeatured`;
+        } else if (endpoint === "LatestVideos") {
+          url.pathname = `/apis/mediator/v1/categories/${pathSegment}/LatestVideos`;
+        }
+      } else if (baseUrl.includes('/translations/all/')) {
+        url.pathname = `/assetsbWVkaWEK/translations/all/${pathSegment}.json`;
+      }
+    }
+    
+    // Add query parameters for category endpoints
+    if (endpoint === "StudioFeatured" || endpoint === "LatestVideos") {
+      url.searchParams.set('detailed', '0');
+      url.searchParams.set('clientType', 'www');
+    } else if (baseUrl.includes('languages/E/all')) {
+      url.searchParams.set('clientType', 'www');
+    }
+    
+    return url.href;
+  } catch {
+    throw new Error('Invalid URL');
+  }
+}
+
 async function getJson(url) {
   try {
     const response = await axios.get(url);
@@ -1309,11 +1354,10 @@ $(".actions").on("click", ".btn-stream", async function () {
           const jsonObj = JSON.parse(it.additionalFields);
           desc = jsonObj.themeAndSession;
           if (it.languageCode) {
-            const i18nRes = await axios.get(
-              `https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`,
-            );
+            const validatedUrl = buildValidatedUrl("https://stream.jw.org/assetsbWVkaWEK/translations/all/", it.languageCode, null);
+            const i18nRes = await axios.get(validatedUrl);
             console.log(
-              `GET https://stream.jw.org/assetsbWVkaWEK/translations/all/${it.languageCode}.json`,
+              `GET ${validatedUrl}`,
               i18nRes.status,
               i18nRes.data,
             );

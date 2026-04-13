@@ -48,7 +48,7 @@
   },
   "description": "JW Launcher",
   "devDependencies": {
-    "electron": "^41.1.1",
+    "electron": "^41.2.0",
     "electron-builder": "^26.8.1"
   },
   "license": "ISC",

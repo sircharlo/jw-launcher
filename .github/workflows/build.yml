@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v5.0.0
 
       - name: Get latest CMake and ninja
-        uses: lukka/get-cmake@latest
+        uses: lukka/get-cmake@f176ccd3f28bda569c43aae4894f06b2435a3375 # latest
 
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v6

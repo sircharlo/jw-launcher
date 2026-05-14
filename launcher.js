@@ -6,6 +6,7 @@ const path = require("node:path");
 const powerControl = require("power-control");
 const { shell } = require("electron");
 const $ = require("jquery");
+const { isEscapeButton, supportKey } = require("./utils/shortcuts");
 
 const { existsSync, readFileSync, writeFileSync } = fs;
 const { app } = remote;
@@ -110,17 +111,6 @@ function goAhead() {
     setShortcutScope("home");
     scheduleLoader();
   });
-}
-function isEscapeButton(event) {
-  return event.key == "Escape" || event.key == "Esc";
-}
-function supportKey(event) {
-  return (
-    !(event.ctrlKey || event.metaKey || event.shiftKey) &&
-    (event.code.includes("Key") ||
-      /^[a-z]$/i.test(event.key) ||
-      isEscapeButton(event))
-  );
 }
 // Centralized, scoped keyboard shortcuts
 let currentKeyHandler = null;

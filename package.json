@@ -35,7 +35,7 @@
     "@electron/remote": "^2.1.3",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@popperjs/core": "^2.11.8",
-    "axios": "^1.15.2",
+    "axios": "^1.16.1",
     "bootstrap": "^5.3.8",
     "bootstrap-dark-5": "^1.1.3",
     "electron-updater": "^6.8.3",
@@ -48,8 +48,9 @@
   },
   "description": "JW Launcher",
   "devDependencies": {
-    "electron": "^42.0.0",
-    "electron-builder": "^26.8.1"
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.3.0"
   },
   "license": "ISC",
   "main": "main.js",
@@ -67,7 +68,9 @@
     "publish": "electron-builder --win -p always",
     "publish-linux": "electron-builder --linux -p always",
     "release": "electron-builder",
-    "start": "electron ."
+    "start": "electron .",
+    "lint": "eslint utils/**/*.js test/**/*.js",
+    "test": "node --test"
   },
   "version": "26.1.0"
 }

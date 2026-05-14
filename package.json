@@ -67,7 +67,9 @@
     "publish": "electron-builder --win -p always",
     "publish-linux": "electron-builder --linux -p always",
     "release": "electron-builder",
-    "start": "electron ."
+    "start": "electron .",
+    "lint": "eslint utils/**/*.js test/**/*.js",
+    "test": "node --test"
   },
   "version": "26.1.0"
 }

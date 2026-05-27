@@ -44,7 +44,7 @@
     "jquery": "^4.0.0",
     "path": "^0.12.7",
     "power-control": "^1.0.0",
-    "select2": "^4.1.0-rc.0"
+    "select2": "^4.1.0"
   },
   "description": "JW Launcher",
   "devDependencies": {

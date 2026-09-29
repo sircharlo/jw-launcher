@@ -8,7 +8,7 @@ function createUpdateWindow() {
   win = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
+      contextIsolation: true,
     },
     minWidth: 1366,
     minHeight: 768,

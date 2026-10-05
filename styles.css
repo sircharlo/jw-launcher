@@ -212,3 +212,48 @@ span.select2.is-invalid .select2-selection__arrow {
     color: var(--bs-white);
   }
 }
+
+/* Replacements for inline style attributes, which the CSP blocks */
+[data-hidden] {
+  display: none;
+}
+
+.flex {
+  display: flex;
+}
+
+.scroll-y {
+  overflow-y: auto;
+}
+
+.select-full {
+  width: 100%;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.tile-cover {
+  background-size: cover;
+  background-position: center;
+}
+
+.tile-row {
+  flex-direction: row;
+}
+
+.tile-shade {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6));
+}
+
+.tile-key {
+  background-color: white;
+  color: black;
+}
+
+.tile-text {
+  color: white;
+  white-space: normal;
+  word-wrap: break-word;
+}

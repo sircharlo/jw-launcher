@@ -1,6 +1,17 @@
 // Globals: $ (jQuery), axios, isEscapeButton/supportKey (utils/shortcuts.js)
 // and launcher (preload.js), the only bridge to the main process
 
+// The CSP blocks style attributes, so elements start hidden via [data-hidden].
+// Hand that over to jQuery so .show()/.fadeIn() restore the stylesheet display.
+function initHidden($root) {
+  $root
+    .find("[data-hidden]")
+    .addBack("[data-hidden]")
+    .hide()
+    .removeAttr("data-hidden");
+}
+initHidden($(document.body));
+
 //          green        pink         blue         deeporange   purple       yellow        cyan        brown
 const colors = [
   "#00e676",
@@ -304,12 +315,13 @@ async function languageRefresh() {
       }),
     );
   }
-  $("#broadcastLang").select2();
+  $("#broadcastLang").select2({ width: "100%" });
 }
 function addNewLink() {
   $(".links tbody").append(
-    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>",
+    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' data-hidden placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' data-hidden><i class='fas fa-minus'></i></button></td></tr>",
   );
+  initHidden($(".links tbody tr").last());
   $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
 }
 function addNewSchedule() {
@@ -377,7 +389,7 @@ async function broadcastLoad() {
               return $(this).find(".linkName").val() !== "";
             }).length + 65,
           ) +
-          "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" +
+          "</kbd></div><div class='align-items-center flex-fill flex'>" +
           broadcastStrings.ttlHome +
           "</div>",
       );
@@ -408,13 +420,11 @@ async function broadcastLoad() {
       for (var featuredVideo of allVideos) {
         videos++;
         var featuredVideoElement = $(
-          "<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded' data-url='" +
+          "<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded flex tile-cover' data-url='" +
             featuredVideo.files.slice(-1)[0].progressiveDownloadURL +
-            "' style='display: flex; background-image: url(\"" +
-            featuredVideo.images.pnr.lg +
-            "\"); background-size: cover; background-position: center;'><div class='flex-column flex-fill p-2' style='display: flex; background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.6));'><div><h5 class='kbd'><kbd style='background-color: white; color: black;'>" +
+            "'><div class='flex-column flex-fill p-2 flex tile-shade'><div><h5 class='kbd'><kbd class='tile-key'>" +
             String.fromCharCode(65 + videos) +
-            "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5 style='color: white; white-space: normal; word-wrap: break-word;'>" +
+            "</kbd></h5></div><div class='align-items-center flex-fill flex-row flex'><h5 class='tile-text'>" +
             featuredVideo.title +
             "</h5></div></div></div></div>",
         ).click(function () {
@@ -426,6 +436,9 @@ async function broadcastLoad() {
           );
           setShortcutScope("player");
         });
+        featuredVideoElement
+          .find(".tile-cover")
+          .css("background-image", 'url("' + featuredVideo.images.pnr.lg + '")');
         $(".featuredVideos").append(featuredVideoElement);
       }
       $(".featuredVideos > div").css(
@@ -561,7 +574,7 @@ function prefsInitialize() {
   }
   $("#broadcastLang")
     .val(prefs.broadcastLang ? prefs.broadcastLang : "")
-    .select2();
+    .select2({ width: "100%" });
   if (prefs.linkArray && JSON.parse(prefs.linkArray).length > 0) {
     for (let link of JSON.parse(prefs.linkArray)) {
       addNewLink();
@@ -1250,9 +1263,9 @@ $(".actions").on("click", ".btn-stream", async function () {
         (it.playUrl && it.playUrl.specialtyGuid) || it.specialtyGuid || "";
       const audioUrl = (it.playUrl && it.playUrl.audioUrl) || "";
       const quality = (it.playUrl && it.playUrl.quality) || "undefined";
-      $(".streamingVideos").append(
+      const $tile = $(
         "<div class='mt-0 pt-2'>" +
-          "<div class='flex-column flex-fill h-100 rounded' " +
+          "<div class='flex-column flex-fill h-100 rounded flex tile-row tile-cover' " +
           "data-url='" +
           playUrl +
           "' " +
@@ -1270,19 +1283,16 @@ $(".actions").on("click", ".btn-stream", async function () {
           "' " +
           "data-quality='" +
           quality +
-          "' " +
-          "style='display: flex; flex-direction: row; background-image: url(\"" +
-          thumb +
-          "\"); background-size: cover; background-position: center;'>" +
-          "<div class='flex-column flex-fill p-2' style='display: flex; background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.6));'>" +
-          "<div><h6 class='kbd'><kbd style='background-color: white; color: black;'>" +
+          "'>" +
+          "<div class='flex-column flex-fill p-2 flex tile-shade'>" +
+          "<div><h6 class='kbd'><kbd class='tile-key'>" +
           String.fromCharCode(66 + added) +
           "</kbd></h6></div>" +
-          "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h6 style='color: white; white-space: normal; word-wrap: break-word;'>" +
+          "<div class='align-items-center flex-fill flex-row flex'><h6 class='tile-text'>" +
           desc +
           "</h6></div>" +
           (pub
-            ? "<div><p style='color: white; white-space: normal; word-wrap: break-word;'>" +
+            ? "<div><p class='tile-text'>" +
               pub +
               "</p></div>"
             : "") +
@@ -1291,6 +1301,8 @@ $(".actions").on("click", ".btn-stream", async function () {
           "</div>" +
           "</div>",
       );
+      $tile.find(".tile-cover").css("background-image", 'url("' + thumb + '")');
+      $(".streamingVideos").append($tile);
       added++;
     }
     $(".streamingVideos > div").css(

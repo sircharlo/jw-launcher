@@ -4,7 +4,7 @@
     <title>JW Launcher</title>
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' https: blob:; connect-src https:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; media-src 'self' https: blob:; connect-src https:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <link
       rel="stylesheet"
@@ -41,7 +41,7 @@
     <div
       id="overlayPleaseWait"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -50,7 +50,7 @@
         <div class="align-self-center fa-2x" role="status">
           <i class="fas fa-circle-notch fa-spin"></i>
         </div>
-        <div class="align-self-center" role="status" style="display: none">
+        <div class="align-self-center" role="status" data-hidden>
           <div class="progress" id="loadingProgress">
             <div class="progress-bar" role="progressbar"></div>
           </div>
@@ -60,7 +60,7 @@
     <div
       id="overlayInternetFail"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -74,7 +74,7 @@
     <div
       id="overlayUpdateCheck"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -88,7 +88,7 @@
     <div
       id="overlayUpdateAvailable"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -102,7 +102,7 @@
     <div
       id="overlayUpdateDownloaded"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -116,7 +116,7 @@
     <div
       id="overlayScheduledAction"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center">
         <div class="align-self-center fa-5x" role="status">
@@ -140,11 +140,10 @@
     <div
       id="overlaySettings"
       class="flex-column p-2 overlay"
-      style="display: none"
+      data-hidden
     >
       <div
-        class="flex-column flex-grow-1 w-100"
-        style="display: flex; overflow-y: auto"
+        class="flex-column flex-grow-1 w-100 flex scroll-y"
       >
         <div class="accordion" id="settingsAccordion">
           <div class="accordion-item">
@@ -195,9 +194,8 @@
                       </td>
                       <td>
                         <select
-                          class="form-select"
+                          class="form-select select-full"
                           id="broadcastLang"
-                          style="width: 100%"
                         >
                           <option></option>
                         </select>
@@ -568,7 +566,7 @@
           </div>
         </div>
       </div>
-      <div class="align-items-start mt-2" style="display: flex">
+      <div class="align-items-start mt-2 flex">
         <div class="col-4">
           <button type="button" class="btn btn-primary" id="btnExport">
             <i class="fas fa-fw fa-file-export"></i> Export settings file
@@ -608,9 +606,8 @@
             id="btnShutdown"
           >
             <div
-              class="kbd action-kbd mx-2 position-absolute"
+              class="kbd action-kbd mx-2 position-absolute left-0"
               id="kbdShutdown"
-              style="left: 0"
             ></div>
             <div class="text-center">
               <div><i class="fas fa-fw fa-power-off"></i></div>
@@ -624,9 +621,8 @@
             id="btnRemoteAssistance"
           >
             <div
-              class="kbd action-kbd mx-2 position-absolute"
+              class="kbd action-kbd mx-2 position-absolute left-0"
               id="kbdRemoteAssistance"
-              style="left: 0"
             ></div>
             <div class="text-center">
               <div><i class="fas fa-fw fa-hands-helping"></i></div>
@@ -634,7 +630,7 @@
             </div>
           </button>
         </div>
-        <div class="flex-grow-1 h-100" style="display: none">
+        <div class="flex-grow-1 h-100" data-hidden>
           <button
             class="btn btn-warning col h-100 justify-content-center w-100"
             id="btn-mac-update"
@@ -648,9 +644,8 @@
             id="btnSettings"
           >
             <div
-              class="kbd action-kbd mx-2 position-absolute"
+              class="kbd action-kbd mx-2 position-absolute left-0"
               id="kbdSettings"
-              style="left: 0"
             ></div>
             <div class="text-center">
               <div><i class="fas fa-fw fa-user-cog"></i></div>
@@ -661,16 +656,15 @@
         <div
           class="flex-grow-1 h-100"
           id="btnCloseContainer"
-          style="display: none"
+          data-hidden
         >
           <button
             class="btn btn-warning d-flex align-items-center justify-content-center w-100 h-100 position-relative"
             id="btnClose"
           >
             <div
-              class="kbd action-kbd mx-2 position-absolute"
+              class="kbd action-kbd mx-2 position-absolute left-0"
               id="kbdClose"
-              style="left: 0"
             ></div>
             <div class="text-center">
               <div><i class="fas fa-fw fa-times"></i></div>
@@ -680,11 +674,11 @@
         </div>
       </div>
     </div>
-    <div id="videos" class="overlay flex-column bg-dark" style="display: none">
+    <div id="videos" class="overlay flex-column bg-dark" data-hidden>
       <div
         id="videoPlayer"
         class="overlay flex-column bg-dark"
-        style="display: none"
+        data-hidden
       >
         <div id="closeButton" class="bg-danger">
           <kbd>X</kbd>
@@ -692,7 +686,7 @@
       </div>
       <div
         class="align-items-center h-100 justify-content-center px-2"
-        style="display: none"
+        data-hidden
       >
         <div
           class="featuredVideos g-2 h-100 justify-content-center row row-cols-5 pt-2"
@@ -704,8 +698,7 @@
                   <h5><kbd>A</kbd></h5>
                 </div>
                 <div
-                  class="align-items-center flex-fill flex-row"
-                  style="display: flex"
+                  class="align-items-center flex-fill flex-row flex"
                 >
                   <h5 id="lblGoHome"></h5>
                 </div>
@@ -716,7 +709,7 @@
       </div>
       <div
         class="align-items-center h-100 justify-content-center px-2"
-        style="display: none"
+        data-hidden
       >
         <div
           class="streamingVideos g-2 h-100 justify-content-center row row-cols-4 pt-2"
@@ -728,8 +721,7 @@
                   <h5><kbd>A</kbd></h5>
                 </div>
                 <div
-                  class="align-items-center flex-fill flex-row"
-                  style="display: flex"
+                  class="align-items-center flex-fill flex-row flex"
                 >
                   <h5 id="lblGoHome2"></h5>
                 </div>
@@ -742,7 +734,7 @@
     <div
       id="overlayConfirm"
       class="overlay justify-content-center"
-      style="display: none"
+      data-hidden
     >
       <div class="align-self-center text-center">
         <div class="mb-3">

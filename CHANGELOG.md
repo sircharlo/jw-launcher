@@ -2,6 +2,32 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## v26.1.1
+
+Release date: 2026-10-05
+
+### Breaking changes
+
+- **macOS**: macOS 13 (Ventura) or later is now required. v26.1.0 is the last release that runs on macOS 12 (Monterey).
+
+### Fixes
+
+- **Linux**: Fixed the desktop entry category and description so the AppImage is listed correctly in application menus.
+- **Security**: Updated `http-cache-semantics` to address GHSA-ch52-4w7c-c8xp.
+
+### Code improvements
+
+- **Dependencies**: Updated Electron from 42 to 44.
+- **Dependencies**: Routine dependency updates.
+
+## v26.1.0
+
+Release date: 2026-01-07
+
+### Fixes
+
+- **Scheduling**: Fixed various issues that were preventing scheduled tasks from running correctly.
+
 ## v25.11.2
 
 Release date: 2025-11-07

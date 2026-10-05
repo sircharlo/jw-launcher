@@ -28,6 +28,11 @@ function createUpdateWindow() {
     } else {
       headers['Referer'] = 'https://stream.jw.org/home';
     }
+    // Enforce session expiration
+    const sessionExpiry = cookieJar.get('stream-session-expiry');
+    if (sessionExpiry && Math.floor(Date.now() / 1000) > parseInt(sessionExpiry)) {
+      cookieJar.clear();
+    }
     // Set Cookie
     if (cookieJar.size > 0) {
       headers['Cookie'] = Array.from(cookieJar.entries()).map(([k, v]) => `${k}=${v}`).join('; ');

@@ -1,18 +1,16 @@
-const axios = require("axios").default;
-const net = require("node:net");
-const remote = require("@electron/remote");
-const fs = require("graceful-fs");
-const path = require("node:path");
-const powerControl = require("power-control");
-const { shell } = require("electron");
-const $ = require("jquery");
-const { isEscapeButton, supportKey } = require("./utils/shortcuts");
+// Globals: $ (jQuery), axios, isEscapeButton/supportKey (utils/shortcuts.js)
+// and launcher (preload.js), the only bridge to the main process
 
-const { existsSync, readFileSync, writeFileSync } = fs;
-const { app } = remote;
-const { getVersion, getPath, quit, setLoginItemSettings } = app;
-const appPath = getPath("userData");
-const { openExternal } = shell;
+// The CSP blocks style attributes, so elements start hidden via [data-hidden].
+// Hand that over to jQuery so .show()/.fadeIn() restore the stylesheet display.
+function initHidden($root) {
+  $root
+    .find("[data-hidden]")
+    .addBack("[data-hidden]")
+    .hide()
+    .removeAttr("data-hidden");
+}
+initHidden($(document.body));
 
 //          green        pink         blue         deeporange   purple       yellow        cyan        brown
 const colors = [
@@ -25,7 +23,6 @@ const colors = [
   "#18ffff",
   "#bcaaa4",
 ];
-const prefsFile = path.join(appPath, "prefs.json");
 let scheduledActionInfo = { items: {} };
 let broadcastStrings = {};
 let prefs = {};
@@ -39,7 +36,7 @@ function checkInternet(online) {
     $("#overlayInternetCheck").fadeIn("fast", () => {
       $("#overlayInternetFail").stop().hide();
     });
-    require("electron").ipcRenderer.send("autoUpdate");
+    launcher.autoUpdate();
   } else {
     $("#overlayInternetFail").fadeIn("fast", () => {
       $("#overlayInternetCheck").stop().hide();
@@ -48,32 +45,29 @@ function checkInternet(online) {
   }
 }
 const updateOnlineStatus = async () => {
-  checkInternet(await isReachable("www.jw.org", 443));
+  checkInternet(await launcher.isOnline());
 };
 updateOnlineStatus();
-require("electron").ipcRenderer.on("hideThenShow", (event, message) => {
+launcher.onHideThenShow((message) => {
   $("#overlay" + message[1]).fadeIn(400, () => {
     $("#overlay" + message[0]).hide();
   });
 });
-require("electron").ipcRenderer.on(
-  "updateDownloadProgress",
-  (event, message) => {
-    const dotsDone = Math.floor(Number.parseFloat(message[0]) / 10);
-    $("#updatePercent i:nth-of-type(" + dotsDone + ")")
-      .addClass("fa-circle text-primary")
-      .removeClass("fa-dot-circle");
-  },
-);
-require("electron").ipcRenderer.on("macUpdate", () => {
+launcher.onUpdateDownloadProgress((message) => {
+  const dotsDone = Math.floor(Number.parseFloat(message[0]) / 10);
+  $("#updatePercent i:nth-of-type(" + dotsDone + ")")
+    .addClass("fa-circle text-primary")
+    .removeClass("fa-dot-circle");
+});
+launcher.onMacUpdate(() => {
   $("#btn-mac-update")
     .click(function () {
-      openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
+      launcher.openReleasesPage();
     })
     .parent()
     .fadeIn();
 });
-require("electron").ipcRenderer.on("goAhead", () => {
+launcher.onGoAhead(() => {
   $("#overlayPleaseWait").fadeIn(400, () => {
     $("#overlayUpdateCheck").hide();
     goAhead();
@@ -93,10 +87,11 @@ $(".links tbody").on("change", "input, select", function () {
   updateScheduleTargets();
 });
 function goAhead() {
-  languageRefresh().then(function () {
-    if (existsSync(prefsFile)) {
+  languageRefresh().then(async function () {
+    const savedPrefs = await launcher.readPrefs();
+    if (savedPrefs !== null) {
       try {
-        prefs = JSON.parse(readFileSync(prefsFile));
+        prefs = JSON.parse(savedPrefs);
         updateCleanup();
       } catch (err) {
         console.error(err, prefs);
@@ -105,12 +100,12 @@ function goAhead() {
     }
     prefsInitialize();
     processSettings();
-    $("#version span.badge").html("v" + getVersion());
+    $("#version span.badge").text("v" + (await launcher.getVersion()));
     $("#overlayPleaseWait").fadeOut();
     // Initialize scoped keyboard shortcuts on first load
     setShortcutScope("home");
     scheduleLoader();
-  });
+  }).catch(console.error);
 }
 // Centralized, scoped keyboard shortcuts
 let currentKeyHandler = null;
@@ -207,28 +202,6 @@ function setShortcutScope(scope) {
     }
   };
   globalThis.addEventListener("keyup", currentKeyHandler, true);
-}
-function isReachable(hostname, port) {
-  return new Promise((resolve) => {
-    try {
-      let client = net.createConnection(port, hostname);
-      client.setTimeout(5000);
-      client.on("timeout", () => {
-        client.destroy("Timeout: " + hostname + ":" + port);
-      });
-      client.on("connect", function () {
-        client.destroy();
-        resolve(true);
-      });
-      client.on("error", function (e) {
-        console.error(e);
-        resolve(false);
-      });
-    } catch (error) {
-      console.error(error);
-      resolve(false);
-    }
-  });
 }
 $("#overlaySettings tbody").on("click", ".btn-delete", function () {
   let parentTable = $(this).closest("tbody");
@@ -342,12 +315,13 @@ async function languageRefresh() {
       }),
     );
   }
-  $("#broadcastLang").select2();
+  $("#broadcastLang").select2({ width: "100%" });
 }
 function addNewLink() {
   $(".links tbody").append(
-    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' style='display: none;' placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' style='display: none;'><i class='fas fa-minus'></i></button></td></tr>",
+    "<tr draggable='true'><td><select class='form-select form-select-sm linkType dynamic-field'><option value='' hidden>Select a type</option><option value='zoom'>Zoom</option><option value='stream'>JW Stream</option></select></td><td><input type='text' class='form-control form-control-sm linkName dynamic-field' data-hidden placeholder='Enter a meaningful description' /></td><td><div class='linkDetails input-group'></div></td><td class='text-end'><button type='button' class='btn btn-light btn-sm btn-sort-schedule me-2 text-dark'><i class='fas fa-sort'></i></button><button type='button' class='btn btn-danger btn-sm btn-delete btn-delete-link' data-hidden><i class='fas fa-minus'></i></button></td></tr>",
   );
+  initHidden($(".links tbody tr").last());
   $(".links tbody tr").last().find(".linkType").addClass("is-invalid");
 }
 function addNewSchedule() {
@@ -415,7 +389,7 @@ async function broadcastLoad() {
               return $(this).find(".linkName").val() !== "";
             }).length + 65,
           ) +
-          "</kbd></div><div class='align-items-center flex-fill' style='display: flex;'>" +
+          "</kbd></div><div class='align-items-center flex-fill flex'>" +
           broadcastStrings.ttlHome +
           "</div>",
       );
@@ -446,13 +420,11 @@ async function broadcastLoad() {
       for (var featuredVideo of allVideos) {
         videos++;
         var featuredVideoElement = $(
-          "<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded' data-url='" +
+          "<div class='mt-0 pt-2'><div class='flex-column flex-fill h-100 rounded flex tile-cover' data-url='" +
             featuredVideo.files.slice(-1)[0].progressiveDownloadURL +
-            "' style='display: flex; background-image: url(\"" +
-            featuredVideo.images.pnr.lg +
-            "\"); background-size: cover; background-position: center;'><div class='flex-column flex-fill p-2' style='display: flex; background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.6));'><div><h5 class='kbd'><kbd style='background-color: white; color: black;'>" +
+            "'><div class='flex-column flex-fill p-2 flex tile-shade'><div><h5 class='kbd'><kbd class='tile-key'>" +
             String.fromCharCode(65 + videos) +
-            "</kbd></h5></div><div class='align-items-center flex-fill flex-row' style='display: flex;'><h5 style='color: white; white-space: normal; word-wrap: break-word;'>" +
+            "</kbd></h5></div><div class='align-items-center flex-fill flex-row flex'><h5 class='tile-text'>" +
             featuredVideo.title +
             "</h5></div></div></div></div>",
         ).click(function () {
@@ -464,6 +436,9 @@ async function broadcastLoad() {
           );
           setShortcutScope("player");
         });
+        featuredVideoElement
+          .find(".tile-cover")
+          .css("background-image", 'url("' + featuredVideo.images.pnr.lg + '")');
         $(".featuredVideos").append(featuredVideoElement);
       }
       $(".featuredVideos > div").css(
@@ -492,21 +467,6 @@ function buttonHeight(broadcastVideos) {
     "height",
     100 / Math.ceil((broadcast + links) / 3) + "%",
   );
-}
-async function downloadFile(url, progressElem) {
-  try {
-    let response = await axios.get(url, {
-      responseType: "arraybuffer",
-      onDownloadProgress: function (progressEvent) {
-        var percent = (progressEvent.loaded / progressEvent.total) * 100;
-        progressElem.css("width", percent + "%");
-      },
-    });
-    return response.data;
-  } catch (err) {
-    console.error(err);
-    return err;
-  }
 }
 function generateButtons() {
   $(".actions .buttonContainer").remove();
@@ -614,7 +574,7 @@ function prefsInitialize() {
   }
   $("#broadcastLang")
     .val(prefs.broadcastLang ? prefs.broadcastLang : "")
-    .select2();
+    .select2({ width: "100%" });
   if (prefs.linkArray && JSON.parse(prefs.linkArray).length > 0) {
     for (let link of JSON.parse(prefs.linkArray)) {
       addNewLink();
@@ -725,9 +685,7 @@ function processSettings() {
   }
   // Close action visibility
   $("#btnCloseContainer").toggle(!!prefs.enableClose);
-  setLoginItemSettings({
-    openAtLogin: prefs.autoRunAtBoot,
-  });
+  launcher.setOpenAtLogin(prefs.autoRunAtBoot);
   broadcastLoad().then(function (broadcastVideos) {
     for (var setting of ["broadcastLang", "username"]) {
       $("#" + setting)
@@ -899,8 +857,7 @@ function updateCleanup() {
         delete prefs["hide" + oldHidePref];
       }
     }
-    writeFileSync(
-      prefsFile,
+    launcher.writePrefs(
       JSON.stringify(
         Object.keys(prefs)
           .sort()
@@ -959,8 +916,7 @@ $(
   } else if ($(this).prop("tagName") == "SELECT") {
     prefs[$(this).prop("id")] = $(this).find("option:selected").val();
   }
-  writeFileSync(
-    prefsFile,
+  launcher.writePrefs(
     JSON.stringify(
       Object.keys(prefs)
         .sort()
@@ -972,9 +928,7 @@ $(
   processSettings();
 });
 $("#autoRunAtBoot").on("change", function () {
-  setLoginItemSettings({
-    openAtLogin: prefs.autoRunAtBoot,
-  });
+  launcher.setOpenAtLogin(prefs.autoRunAtBoot);
 });
 $("#broadcastLang").on("change", function () {
   $(".featuredVideos > div:not(:first-of-type)").remove();
@@ -984,7 +938,7 @@ $("#btnShutdown").on("click", function () {
     "confirmShutdown",
     (prefs.labelShutdown || "Shutdown").toLowerCase(),
     () => {
-      powerControl.powerOff();
+      launcher.powerOff();
     },
   );
 });
@@ -993,11 +947,7 @@ $("#btnClose").on("click", function () {
     "confirmClose",
     (prefs.labelClose || "Close").toLowerCase(),
     () => {
-      try {
-        quit();
-      } catch (e) {
-        console.error(e);
-      }
+      launcher.quit();
     },
   );
 });
@@ -1009,12 +959,7 @@ $(".btn-add-schedule").on("click", function () {
   validateSettings();
 });
 $("#btnExport").on("click", function () {
-  const outPath = remote.dialog.showSaveDialogSync({
-    defaultPath: "prefs.json",
-  });
-  if (outPath) {
-    writeFileSync(outPath, JSON.stringify(prefs, null, 2));
-  }
+  launcher.exportPrefs(JSON.stringify(prefs, null, 2)).catch(console.error);
 });
 $("#closeButton").on("click", function () {
   $("#videoPlayer").fadeOut().find("video").remove();
@@ -1133,14 +1078,9 @@ $(".streamingVideos").on(
 );
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
-  openExternal(
-    "zoommtg://zoom.us/join?confno=" +
-      linkDetails[0].replace(/\D+/g, "") +
-      "&pwd=" +
-      linkDetails[1] +
-      "&uname=" +
-      prefs.username,
-  );
+  launcher
+    .openZoom(linkDetails[0], linkDetails[1], prefs.username)
+    .catch(console.error);
   let timeLeft = 15;
   let loadZoomTimer = setInterval(function () {
     $("#loadingProgress .progress-bar")
@@ -1323,9 +1263,9 @@ $(".actions").on("click", ".btn-stream", async function () {
         (it.playUrl && it.playUrl.specialtyGuid) || it.specialtyGuid || "";
       const audioUrl = (it.playUrl && it.playUrl.audioUrl) || "";
       const quality = (it.playUrl && it.playUrl.quality) || "undefined";
-      $(".streamingVideos").append(
+      const $tile = $(
         "<div class='mt-0 pt-2'>" +
-          "<div class='flex-column flex-fill h-100 rounded' " +
+          "<div class='flex-column flex-fill h-100 rounded flex tile-row tile-cover' " +
           "data-url='" +
           playUrl +
           "' " +
@@ -1343,19 +1283,16 @@ $(".actions").on("click", ".btn-stream", async function () {
           "' " +
           "data-quality='" +
           quality +
-          "' " +
-          "style='display: flex; flex-direction: row; background-image: url(\"" +
-          thumb +
-          "\"); background-size: cover; background-position: center;'>" +
-          "<div class='flex-column flex-fill p-2' style='display: flex; background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.6));'>" +
-          "<div><h6 class='kbd'><kbd style='background-color: white; color: black;'>" +
+          "'>" +
+          "<div class='flex-column flex-fill p-2 flex tile-shade'>" +
+          "<div><h6 class='kbd'><kbd class='tile-key'>" +
           String.fromCharCode(66 + added) +
           "</kbd></h6></div>" +
-          "<div class='align-items-center flex-fill flex-row' style='display: flex;'><h6 style='color: white; white-space: normal; word-wrap: break-word;'>" +
+          "<div class='align-items-center flex-fill flex-row flex'><h6 class='tile-text'>" +
           desc +
           "</h6></div>" +
           (pub
-            ? "<div><p style='color: white; white-space: normal; word-wrap: break-word;'>" +
+            ? "<div><p class='tile-text'>" +
               pub +
               "</p></div>"
             : "") +
@@ -1364,6 +1301,8 @@ $(".actions").on("click", ".btn-stream", async function () {
           "</div>" +
           "</div>",
       );
+      $tile.find(".tile-cover").css("background-image", 'url("' + thumb + '")');
+      $(".streamingVideos").append($tile);
       added++;
     }
     $(".streamingVideos > div").css(
@@ -1383,20 +1322,16 @@ $(".actions").on("click", ".btn-stream", async function () {
     console.error(err);
   }
 });
+launcher.onQuickSupportProgress((percent) => {
+  $("#loadingProgress .progress-bar").css("width", percent + "%");
+});
 $("#btnRemoteAssistance").on("click", async function () {
   const run = async () => {
     $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
     $("#overlayPleaseWait").fadeIn();
-    var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
-    if (process.platform == "darwin") {
-      qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
-    } else if (process.platform == "linux") {
-      qsUrl =
-        "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz";
-    }
     var initialTriggerText = $(this).html();
     $(this).prop("disabled", true);
-    var qs = await downloadFile(qsUrl, $("#loadingProgress .progress-bar"));
+    const launched = await launcher.runQuickSupport();
     $("#overlayPleaseWait")
       .delay(15000)
       .fadeOut(400, function () {
@@ -1404,20 +1339,8 @@ $("#btnRemoteAssistance").on("click", async function () {
           .closest("div.align-self-center")
           .hide();
       });
-    var qsFilename = path.basename(qsUrl);
-    try {
-      if (qs && !(qs instanceof Error)) {
-        const destPath = path.join(appPath, qsFilename);
-        writeFileSync(destPath, Buffer.from(qs));
-        openExternal(destPath);
-      } else {
-        console.error("Failed to download TeamViewer QuickSupport:", qs);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      $(this).html(initialTriggerText).prop("disabled", false);
-    }
+    if (!launched) console.error("Failed to run TeamViewer QuickSupport");
+    $(this).html(initialTriggerText).prop("disabled", false);
   };
   await confirmIfNeeded(
     "confirmRemoteAssistance",

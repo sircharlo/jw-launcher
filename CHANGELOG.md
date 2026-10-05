@@ -13,11 +13,13 @@ Release date: 2026-10-05
 ### Fixes
 
 - **Linux**: Fixed the desktop entry category and description so the AppImage is listed correctly in application menus.
+- **Security**: Isolated the app window from Node.js and Electron internals (context isolation, sandbox, Content-Security-Policy); privileged actions now go through a restricted, validated bridge.
 - **Security**: Updated `http-cache-semantics` to address GHSA-ch52-4w7c-c8xp.
 
 ### Code improvements
 
 - **Dependencies**: Updated Electron from 42 to 44.
+- **Dependencies**: Removed `@electron/remote` and `graceful-fs`.
 - **Dependencies**: Routine dependency updates.
 
 ## v26.1.0

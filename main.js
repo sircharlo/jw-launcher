@@ -1,14 +1,135 @@
-const { app, BrowserWindow, ipcMain } = require("electron"),
+const { app, BrowserWindow, dialog, ipcMain, net, shell } = require("electron"),
   { autoUpdater } = require("electron-updater"),
-  remote = require("@electron/remote/main");
+  fs = require("node:fs"),
+  path = require("node:path"),
+  { createConnection } = require("node:net"),
+  { pathToFileURL } = require("node:url"),
+  powerControl = require("power-control");
 var win = {};
 const cookieJar = new Map();
-remote.initialize();
+const indexUrl = pathToFileURL(path.join(__dirname, "index.html")).href;
+const prefsFile = path.join(app.getPath("userData"), "prefs.json");
+const quickSupportUrls = {
+  darwin: "https://download.teamviewer.com/download/TeamViewerQS.dmg",
+  linux:
+    "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz",
+  win32: "https://download.teamviewer.com/download/TeamViewerQS.exe",
+};
+// Only answer IPC coming from our own page, never from other frames or origins
+function fromApp(event) {
+  return !!event.senderFrame && event.senderFrame.url.split("#")[0] === indexUrl;
+}
+function handle(channel, listener) {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!fromApp(event)) throw new Error("Blocked IPC from untrusted sender");
+    return listener(event, ...args);
+  });
+}
+function on(channel, listener) {
+  ipcMain.on(channel, (event, ...args) => {
+    if (fromApp(event)) listener(event, ...args);
+  });
+}
+function isOnline() {
+  return new Promise((resolve) => {
+    const client = createConnection(443, "www.jw.org");
+    client.setTimeout(5000);
+    client.on("timeout", () => {
+      client.destroy();
+      resolve(false);
+    });
+    client.on("connect", () => {
+      client.destroy();
+      resolve(true);
+    });
+    client.on("error", (e) => {
+      console.error(e);
+      resolve(false);
+    });
+  });
+}
+async function runQuickSupport(event) {
+  const url = quickSupportUrls[process.platform];
+  if (!url) return false;
+  try {
+    const response = await net.fetch(url);
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const total = Number(response.headers.get("content-length")) || 0;
+    const reader = response.body.getReader();
+    const chunks = [];
+    let loaded = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.length;
+      if (total) event.sender.send("quickSupport:progress", (loaded / total) * 100);
+    }
+    const destPath = path.join(app.getPath("userData"), path.basename(url));
+    fs.writeFileSync(destPath, Buffer.concat(chunks));
+    const err = await shell.openPath(destPath);
+    if (err) throw new Error(err);
+    return true;
+  } catch (e) {
+    console.error("Failed to run TeamViewer QuickSupport:", e);
+    return false;
+  }
+}
+function registerIpc() {
+  handle("app:getVersion", () => app.getVersion());
+  handle("net:isOnline", () => isOnline());
+  handle("prefs:read", () =>
+    fs.existsSync(prefsFile) ? fs.readFileSync(prefsFile, "utf8") : null,
+  );
+  on("prefs:write", (_event, json) => {
+    if (typeof json !== "string") return;
+    try {
+      fs.writeFileSync(prefsFile, json);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+  handle("prefs:export", async (_event, json) => {
+    if (typeof json !== "string") return false;
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+      defaultPath: "prefs.json",
+    });
+    if (canceled || !filePath) return false;
+    fs.writeFileSync(filePath, json);
+    return true;
+  });
+  on("app:setOpenAtLogin", (_event, openAtLogin) => {
+    app.setLoginItemSettings({ openAtLogin: !!openAtLogin });
+  });
+  // URLs are built here from fixed templates; the renderer never supplies one
+  handle("zoom:join", (_event, meetingId, password, name) => {
+    const confno = String(meetingId ?? "").replace(/\D+/g, "");
+    if (!confno) throw new Error("Missing Zoom meeting ID");
+    return shell.openExternal(
+      "zoommtg://zoom.us/join?confno=" +
+        confno +
+        "&pwd=" +
+        encodeURIComponent(String(password ?? "")) +
+        "&uname=" +
+        encodeURIComponent(String(name ?? "")),
+    );
+  });
+  on("shell:openReleasesPage", () => {
+    shell.openExternal(
+      "https://github.com/sircharlo/jw-launcher/releases/latest",
+    );
+  });
+  handle("quickSupport:run", (event) => runQuickSupport(event));
+  on("power:off", () => powerControl.powerOff());
+  on("app:quit", () => app.quit());
+}
 function createUpdateWindow() {
   win = new BrowserWindow({
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
     },
     minWidth: 1366,
     minHeight: 768,
@@ -70,7 +191,8 @@ function createUpdateWindow() {
     }
     callback({ responseHeaders: details.responseHeaders });
   });
-  remote.enable(win.webContents);
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (event) => event.preventDefault());
   win.setMenuBarVisibility(false);
   win.loadFile("index.html");
   win.maximize();
@@ -89,7 +211,8 @@ if (!gotTheLock) {
       win.focus();
     }
   });
-  ipcMain.on("autoUpdate", () => {
+  registerIpc();
+  on("autoUpdate", () => {
     win.webContents.send("hideThenShow", ["InternetCheck", "UpdateCheck"]);
     autoUpdater.checkForUpdates().then((result) => {
       if (!result) {

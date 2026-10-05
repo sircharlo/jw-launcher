@@ -11,7 +11,10 @@ function supportKey(event) {
   );
 }
 
-module.exports = {
-  isEscapeButton,
-  supportKey,
-};
+// Loaded as a plain <script> in the renderer, and via require() in tests
+if (typeof module === "object") {
+  module.exports = {
+    isEscapeButton,
+    supportKey,
+  };
+}

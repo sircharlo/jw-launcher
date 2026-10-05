@@ -1,18 +1,6 @@
-const axios = require("axios").default;
-const net = require("node:net");
-const remote = require("@electron/remote");
-const fs = require("graceful-fs");
-const path = require("node:path");
-const powerControl = require("power-control");
-const { shell } = require("electron");
-const $ = require("jquery");
-const { isEscapeButton, supportKey } = require("./utils/shortcuts");
-
-const { existsSync, readFileSync, writeFileSync } = fs;
-const { app } = remote;
-const { getVersion, getPath, quit, setLoginItemSettings } = app;
-const appPath = getPath("userData");
-const { openExternal } = shell;
+// Globals: $ (jQuery), axios, isEscapeButton/supportKey (utils/shortcuts.js)
+// and launcher (preload.js), the only bridge to the main process
+const openExternal = (url) => launcher.openExternal(url).catch(console.error);
 
 //          green        pink         blue         deeporange   purple       yellow        cyan        brown
 const colors = [
@@ -25,7 +13,6 @@ const colors = [
   "#18ffff",
   "#bcaaa4",
 ];
-const prefsFile = path.join(appPath, "prefs.json");
 let scheduledActionInfo = { items: {} };
 let broadcastStrings = {};
 let prefs = {};
@@ -39,7 +26,7 @@ function checkInternet(online) {
     $("#overlayInternetCheck").fadeIn("fast", () => {
       $("#overlayInternetFail").stop().hide();
     });
-    require("electron").ipcRenderer.send("autoUpdate");
+    launcher.autoUpdate();
   } else {
     $("#overlayInternetFail").fadeIn("fast", () => {
       $("#overlayInternetCheck").stop().hide();
@@ -48,24 +35,21 @@ function checkInternet(online) {
   }
 }
 const updateOnlineStatus = async () => {
-  checkInternet(await isReachable("www.jw.org", 443));
+  checkInternet(await launcher.isOnline());
 };
 updateOnlineStatus();
-require("electron").ipcRenderer.on("hideThenShow", (event, message) => {
+launcher.onHideThenShow((message) => {
   $("#overlay" + message[1]).fadeIn(400, () => {
     $("#overlay" + message[0]).hide();
   });
 });
-require("electron").ipcRenderer.on(
-  "updateDownloadProgress",
-  (event, message) => {
-    const dotsDone = Math.floor(Number.parseFloat(message[0]) / 10);
-    $("#updatePercent i:nth-of-type(" + dotsDone + ")")
-      .addClass("fa-circle text-primary")
-      .removeClass("fa-dot-circle");
-  },
-);
-require("electron").ipcRenderer.on("macUpdate", () => {
+launcher.onUpdateDownloadProgress((message) => {
+  const dotsDone = Math.floor(Number.parseFloat(message[0]) / 10);
+  $("#updatePercent i:nth-of-type(" + dotsDone + ")")
+    .addClass("fa-circle text-primary")
+    .removeClass("fa-dot-circle");
+});
+launcher.onMacUpdate(() => {
   $("#btn-mac-update")
     .click(function () {
       openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
@@ -73,7 +57,7 @@ require("electron").ipcRenderer.on("macUpdate", () => {
     .parent()
     .fadeIn();
 });
-require("electron").ipcRenderer.on("goAhead", () => {
+launcher.onGoAhead(() => {
   $("#overlayPleaseWait").fadeIn(400, () => {
     $("#overlayUpdateCheck").hide();
     goAhead();
@@ -93,10 +77,11 @@ $(".links tbody").on("change", "input, select", function () {
   updateScheduleTargets();
 });
 function goAhead() {
-  languageRefresh().then(function () {
-    if (existsSync(prefsFile)) {
+  languageRefresh().then(async function () {
+    const savedPrefs = await launcher.readPrefs();
+    if (savedPrefs !== null) {
       try {
-        prefs = JSON.parse(readFileSync(prefsFile));
+        prefs = JSON.parse(savedPrefs);
         updateCleanup();
       } catch (err) {
         console.error(err, prefs);
@@ -105,7 +90,7 @@ function goAhead() {
     }
     prefsInitialize();
     processSettings();
-    $("#version span.badge").html("v" + getVersion());
+    $("#version span.badge").text("v" + (await launcher.getVersion()));
     $("#overlayPleaseWait").fadeOut();
     // Initialize scoped keyboard shortcuts on first load
     setShortcutScope("home");
@@ -207,28 +192,6 @@ function setShortcutScope(scope) {
     }
   };
   globalThis.addEventListener("keyup", currentKeyHandler, true);
-}
-function isReachable(hostname, port) {
-  return new Promise((resolve) => {
-    try {
-      let client = net.createConnection(port, hostname);
-      client.setTimeout(5000);
-      client.on("timeout", () => {
-        client.destroy("Timeout: " + hostname + ":" + port);
-      });
-      client.on("connect", function () {
-        client.destroy();
-        resolve(true);
-      });
-      client.on("error", function (e) {
-        console.error(e);
-        resolve(false);
-      });
-    } catch (error) {
-      console.error(error);
-      resolve(false);
-    }
-  });
 }
 $("#overlaySettings tbody").on("click", ".btn-delete", function () {
   let parentTable = $(this).closest("tbody");
@@ -493,21 +456,6 @@ function buttonHeight(broadcastVideos) {
     100 / Math.ceil((broadcast + links) / 3) + "%",
   );
 }
-async function downloadFile(url, progressElem) {
-  try {
-    let response = await axios.get(url, {
-      responseType: "arraybuffer",
-      onDownloadProgress: function (progressEvent) {
-        var percent = (progressEvent.loaded / progressEvent.total) * 100;
-        progressElem.css("width", percent + "%");
-      },
-    });
-    return response.data;
-  } catch (err) {
-    console.error(err);
-    return err;
-  }
-}
 function generateButtons() {
   $(".actions .buttonContainer").remove();
   let links = $(".links tbody tr").filter(function () {
@@ -725,9 +673,7 @@ function processSettings() {
   }
   // Close action visibility
   $("#btnCloseContainer").toggle(!!prefs.enableClose);
-  setLoginItemSettings({
-    openAtLogin: prefs.autoRunAtBoot,
-  });
+  launcher.setOpenAtLogin(prefs.autoRunAtBoot);
   broadcastLoad().then(function (broadcastVideos) {
     for (var setting of ["broadcastLang", "username"]) {
       $("#" + setting)
@@ -899,8 +845,7 @@ function updateCleanup() {
         delete prefs["hide" + oldHidePref];
       }
     }
-    writeFileSync(
-      prefsFile,
+    launcher.writePrefs(
       JSON.stringify(
         Object.keys(prefs)
           .sort()
@@ -959,8 +904,7 @@ $(
   } else if ($(this).prop("tagName") == "SELECT") {
     prefs[$(this).prop("id")] = $(this).find("option:selected").val();
   }
-  writeFileSync(
-    prefsFile,
+  launcher.writePrefs(
     JSON.stringify(
       Object.keys(prefs)
         .sort()
@@ -972,9 +916,7 @@ $(
   processSettings();
 });
 $("#autoRunAtBoot").on("change", function () {
-  setLoginItemSettings({
-    openAtLogin: prefs.autoRunAtBoot,
-  });
+  launcher.setOpenAtLogin(prefs.autoRunAtBoot);
 });
 $("#broadcastLang").on("change", function () {
   $(".featuredVideos > div:not(:first-of-type)").remove();
@@ -984,7 +926,7 @@ $("#btnShutdown").on("click", function () {
     "confirmShutdown",
     (prefs.labelShutdown || "Shutdown").toLowerCase(),
     () => {
-      powerControl.powerOff();
+      launcher.powerOff();
     },
   );
 });
@@ -993,11 +935,7 @@ $("#btnClose").on("click", function () {
     "confirmClose",
     (prefs.labelClose || "Close").toLowerCase(),
     () => {
-      try {
-        quit();
-      } catch (e) {
-        console.error(e);
-      }
+      launcher.quit();
     },
   );
 });
@@ -1009,12 +947,7 @@ $(".btn-add-schedule").on("click", function () {
   validateSettings();
 });
 $("#btnExport").on("click", function () {
-  const outPath = remote.dialog.showSaveDialogSync({
-    defaultPath: "prefs.json",
-  });
-  if (outPath) {
-    writeFileSync(outPath, JSON.stringify(prefs, null, 2));
-  }
+  launcher.exportPrefs(JSON.stringify(prefs, null, 2)).catch(console.error);
 });
 $("#closeButton").on("click", function () {
   $("#videoPlayer").fadeOut().find("video").remove();
@@ -1383,20 +1316,16 @@ $(".actions").on("click", ".btn-stream", async function () {
     console.error(err);
   }
 });
+launcher.onQuickSupportProgress((percent) => {
+  $("#loadingProgress .progress-bar").css("width", percent + "%");
+});
 $("#btnRemoteAssistance").on("click", async function () {
   const run = async () => {
     $("#loadingProgress .progress-bar").closest("div.align-self-center").show();
     $("#overlayPleaseWait").fadeIn();
-    var qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.exe";
-    if (process.platform == "darwin") {
-      qsUrl = "https://download.teamviewer.com/download/TeamViewerQS.dmg";
-    } else if (process.platform == "linux") {
-      qsUrl =
-        "https://download.teamviewer.com/download/version_11x/teamviewer_qs.tar.gz";
-    }
     var initialTriggerText = $(this).html();
     $(this).prop("disabled", true);
-    var qs = await downloadFile(qsUrl, $("#loadingProgress .progress-bar"));
+    const launched = await launcher.runQuickSupport();
     $("#overlayPleaseWait")
       .delay(15000)
       .fadeOut(400, function () {
@@ -1404,20 +1333,8 @@ $("#btnRemoteAssistance").on("click", async function () {
           .closest("div.align-self-center")
           .hide();
       });
-    var qsFilename = path.basename(qsUrl);
-    try {
-      if (qs && !(qs instanceof Error)) {
-        const destPath = path.join(appPath, qsFilename);
-        writeFileSync(destPath, Buffer.from(qs));
-        openExternal(destPath);
-      } else {
-        console.error("Failed to download TeamViewer QuickSupport:", qs);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      $(this).html(initialTriggerText).prop("disabled", false);
-    }
+    if (!launched) console.error("Failed to run TeamViewer QuickSupport");
+    $(this).html(initialTriggerText).prop("disabled", false);
   };
   await confirmIfNeeded(
     "confirmRemoteAssistance",

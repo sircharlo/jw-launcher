@@ -4,7 +4,7 @@
     "appId": "sircharlo.jw-launcher",
     "buildDependenciesFromSource": true,
     "linux": {
-      "category": "Utilities",
+      "category": "Utility",
       "icon": "build/icon.png",
       "publish": [
         "github"
@@ -33,24 +33,24 @@
   },
   "dependencies": {
     "@electron/remote": "^2.1.3",
-    "@fortawesome/fontawesome-free": "^7.3.0",
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@popperjs/core": "^2.11.8",
     "axios": "^1.20.0",
     "bootstrap": "^5.3.8",
     "bootstrap-dark-5": "^1.1.3",
     "electron-updater": "^6.8.9",
     "graceful-fs": "^4.2.11",
-    "inputmask": "^5.0.9",
+    "inputmask": "^5.0.10",
     "jquery": "^4.0.0",
     "path": "^0.12.7",
     "power-control": "^1.0.0",
     "select2": "^4.1.0"
   },
-  "description": "JW Launcher",
+  "description": "Launch Zoom meetings, JW Broadcasting and JW Stream programs, and remote assistance with one click",
   "devDependencies": {
-    "electron": "^42.11.8",
+    "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
-    "eslint": "^10.6.0"
+    "eslint": "^10.12.0"
   },
   "license": "ISC",
   "main": "main.js",
@@ -72,5 +72,5 @@
     "lint": "eslint utils/**/*.js test/**/*.js",
     "test": "node --test"
   },
-  "version": "26.1.0"
+  "version": "26.1.1"
 }

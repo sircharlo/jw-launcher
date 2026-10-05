@@ -1,0 +1,214 @@
+html,
+body {
+  overflow: hidden;
+  height: 100%;
+  user-select: none;
+}
+
+.overlay {
+  background: var(--bs-light);
+  color: var(--bs-dark);
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  z-index: 5000;
+  top: 0;
+  left: 0;
+  float: left;
+  text-align: center;
+  display: flex;
+}
+
+#overlaySettings {
+  z-index: 50;
+  text-align: left;
+  font-size: 0.9em;
+}
+
+#overlaySettings div.btn-group-toggle {
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+span.select2.is-invalid span.select2-selection {
+  border-color: #dc3545;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+#overlaySettings input[type="text"] {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#overlaySettings table td {
+  vertical-align: middle;
+}
+
+#overlaySettings table td div {
+  display: flex;
+  align-items: center;
+}
+
+#overlaySettings table td div:not(.desc) {
+  justify-content: end;
+}
+
+/* Cursor feedback for settings toggles */
+#overlaySettings .form-check-input:not(:disabled),
+#overlaySettings .form-check-input:not(:disabled) + .form-check-label {
+  cursor: pointer;
+}
+#overlaySettings .form-check-input:disabled,
+#overlaySettings .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+span.select2.is-invalid .select2-selection__arrow {
+  right: 25px !important;
+}
+
+#overlaySettings tbody .btn-sort-schedule {
+  display: inline-block;
+  vertical-align: middle;
+  cursor: grab;
+}
+
+#overlaySettings tbody .btn-sort-schedule:active {
+  cursor: grabbing;
+}
+
+#version,
+#broadcast1button,
+#btnGoHome,
+#btnGoHome2,
+.lblGoHome,
+.lblGoHome2 {
+  display: flex;
+}
+
+#version span.badge {
+  font-weight: normal;
+}
+
+.actions {
+  height: 90%;
+}
+
+.actions button:hover,
+.streamingVideos > div > div:hover,
+.featuredVideos > div > div:hover {
+  filter: brightness(0.9);
+}
+
+.streamingVideos > div > div,
+.featuredVideos > div > div,
+.actions .btn {
+  cursor: pointer;
+  color: var(--bs-black);
+}
+
+.advanced-actions {
+  height: 10%;
+}
+
+.actions .btn {
+  font-size: calc(1.5vw + 1.5vh);
+  line-height: 1.2;
+}
+
+#broadcast1button em {
+  display: contents;
+}
+
+.advanced-actions .btn {
+  font-size: calc(0.75vw + 0.75vh);
+}
+
+#videos h5:not(.kbd) {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: calc(1vh + 1vw);
+}
+
+#videos .featuredVideos h5:not(.kbd),
+#videos .streamingVideos h6:not(.kbd) {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+#videos h6 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: calc(1vh + 1vw);
+}
+
+.go-home {
+  background-color: #f4511e;
+  font-size: calc(1vh + 1vw);
+}
+
+#closeButton {
+  position: fixed;
+  height: 10vh;
+  width: 10vh;
+  line-height: 9vh;
+  border-bottom-right-radius: 2.5vw;
+  font-size: 3vw;
+  z-index: 1000;
+}
+
+.thumb-16x9 {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  overflow: hidden;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.thumb-16x9 img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  .overlay {
+    background: var(--bs-gray-800);
+    color: var(--bs-light);
+  }
+
+  .select2-dropdown,
+  #select2-broadcastLang-container {
+    color: var(--bs-light) !important;
+    background: var(--bs-dark) !important;
+    border-radius: 0.2rem;
+  }
+
+  .select2-container--default .select2-results__option--selected {
+    background: var(--bs-secondary) !important;
+  }
+
+  .select2-container--default .select2-selection--single {
+    border-color: var(--bs-secondary) !important;
+    background-color: var(--bs-dark) !important;
+  }
+
+  .actions .btn {
+    color: var(--bs-white);
+  }
+}

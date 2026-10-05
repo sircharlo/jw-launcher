@@ -1,6 +1,5 @@
 // Globals: $ (jQuery), axios, isEscapeButton/supportKey (utils/shortcuts.js)
 // and launcher (preload.js), the only bridge to the main process
-const openExternal = (url) => launcher.openExternal(url).catch(console.error);
 
 //          green        pink         blue         deeporange   purple       yellow        cyan        brown
 const colors = [
@@ -52,7 +51,7 @@ launcher.onUpdateDownloadProgress((message) => {
 launcher.onMacUpdate(() => {
   $("#btn-mac-update")
     .click(function () {
-      openExternal("https://github.com/sircharlo/jw-launcher/releases/latest");
+      launcher.openReleasesPage();
     })
     .parent()
     .fadeIn();
@@ -95,7 +94,7 @@ function goAhead() {
     // Initialize scoped keyboard shortcuts on first load
     setShortcutScope("home");
     scheduleLoader();
-  });
+  }).catch(console.error);
 }
 // Centralized, scoped keyboard shortcuts
 let currentKeyHandler = null;
@@ -1066,14 +1065,9 @@ $(".streamingVideos").on(
 );
 $(".actions").on("click", ".btn-zoom", function () {
   let linkDetails = $(this).data("link-details").split(",");
-  openExternal(
-    "zoommtg://zoom.us/join?confno=" +
-      linkDetails[0].replace(/\D+/g, "") +
-      "&pwd=" +
-      linkDetails[1] +
-      "&uname=" +
-      prefs.username,
-  );
+  launcher
+    .openZoom(linkDetails[0], linkDetails[1], prefs.username)
+    .catch(console.error);
   let timeLeft = 15;
   let loadZoomTimer = setInterval(function () {
     $("#loadingProgress .progress-bar")

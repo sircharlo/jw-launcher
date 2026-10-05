@@ -101,12 +101,23 @@ function registerIpc() {
   on("app:setOpenAtLogin", (_event, openAtLogin) => {
     app.setLoginItemSettings({ openAtLogin: !!openAtLogin });
   });
-  handle("shell:openExternal", (_event, url) => {
-    const { protocol } = new URL(url);
-    if (protocol !== "https:" && protocol !== "zoommtg:") {
-      throw new Error("Blocked external URL: " + url);
-    }
-    return shell.openExternal(url);
+  // URLs are built here from fixed templates; the renderer never supplies one
+  handle("zoom:join", (_event, meetingId, password, name) => {
+    const confno = String(meetingId ?? "").replace(/\D+/g, "");
+    if (!confno) throw new Error("Missing Zoom meeting ID");
+    return shell.openExternal(
+      "zoommtg://zoom.us/join?confno=" +
+        confno +
+        "&pwd=" +
+        encodeURIComponent(String(password ?? "")) +
+        "&uname=" +
+        encodeURIComponent(String(name ?? "")),
+    );
+  });
+  on("shell:openReleasesPage", () => {
+    shell.openExternal(
+      "https://github.com/sircharlo/jw-launcher/releases/latest",
+    );
   });
   handle("quickSupport:run", (event) => runQuickSupport(event));
   on("power:off", () => powerControl.powerOff());

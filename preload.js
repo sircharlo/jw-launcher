@@ -12,7 +12,9 @@ contextBridge.exposeInMainWorld("launcher", {
   exportPrefs: (json) => ipcRenderer.invoke("prefs:export", json),
   setOpenAtLogin: (openAtLogin) =>
     ipcRenderer.send("app:setOpenAtLogin", !!openAtLogin),
-  openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
+  openZoom: (meetingId, password, name) =>
+    ipcRenderer.invoke("zoom:join", meetingId, password, name),
+  openReleasesPage: () => ipcRenderer.send("shell:openReleasesPage"),
   runQuickSupport: () => ipcRenderer.invoke("quickSupport:run"),
   powerOff: () => ipcRenderer.send("power:off"),
   quit: () => ipcRenderer.send("app:quit"),

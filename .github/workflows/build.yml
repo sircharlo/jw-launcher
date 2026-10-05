@@ -49,6 +49,9 @@ jobs:
   release:
     runs-on: ${{ matrix.os }}
     needs: [lint, test]
+    # electron-builder creates/updates the draft GitHub release for this version
+    permissions:
+      contents: write
 
     strategy:
       matrix:

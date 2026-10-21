@@ -46,7 +46,7 @@
   },
   "description": "Launch Zoom meetings, JW Broadcasting and JW Stream programs, and remote assistance with one click",
   "devDependencies": {
-    "electron": "^44.8.0",
+    "electron": "^44.9.0",
     "electron-builder": "^26.15.3",
     "eslint": "^10.13.0"
   },
